@@ -230,38 +230,6 @@ CREATE TABLE penalty
 );
 
 
-CREATE TABLE review
-(
-	id          NUMBER(19)
-		GENERATED ALWAYS AS IDENTITY
-		CONSTRAINT pk_review PRIMARY KEY,
-	reviewer_id NUMBER(19)                                       NOT NULL,
-	reviewee_id NUMBER(19)                                       NOT NULL,
-	book_id     NUMBER(19),
-	rating      NUMBER(2)
-		CONSTRAINT ck_review_rating CHECK (rating BETWEEN 1 AND 5) NOT NULL,
-	review_text VARCHAR2(1000),
-	is_deleted  NUMBER(1) DEFAULT 0                              NOT NULL
-		CONSTRAINT ck_review_is_del CHECK (is_deleted IN (0, 1)),
-	-- audit ----
-	created_at  TIMESTAMP                                        NOT NULL,
-	created_by  VARCHAR2(50)                                     NOT NULL,
-	updated_at  TIMESTAMP,
-	updated_by  VARCHAR2(50),
-	deleted_at  TIMESTAMP,
-	deleted_by  VARCHAR2(50),
-	CONSTRAINT fk_review__user_from
-		FOREIGN KEY (reviewer_id) REFERENCES app_user (id)
-			ON DELETE CASCADE,
-	CONSTRAINT fk_review__user_to
-		FOREIGN KEY (reviewee_id) REFERENCES app_user (id)
-			ON DELETE CASCADE,
-	CONSTRAINT fk_review__book
-		FOREIGN KEY (book_id) REFERENCES book (id)
-			ON DELETE SET NULL,
-	CONSTRAINT ck_review_no_self CHECK (reviewer_id <> reviewee_id)
-);
-
 /*==============================================================================
   4.  INDEXES
 ==============================================================================*/
@@ -284,10 +252,6 @@ CREATE INDEX ix_penalty_type ON penalty (type_id);
 CREATE INDEX ix_penalty_resolver ON penalty (resolved_by_id);
 CREATE INDEX ix_penalty_active ON penalty (is_deleted, request_id);
 
-CREATE INDEX ix_review_reviewer ON review (reviewer_id);
-CREATE INDEX ix_review_reviewee ON review (reviewee_id);
-CREATE INDEX ix_review_active ON review (is_deleted, reviewee_id);
-CREATE INDEX ix_review_book ON review (book_id);
 
 /*==============================================================================
   3.  BUSINESS TRIGGERS
