@@ -4,6 +4,12 @@ import jakarta.validation.constraints.NotNull;
 
 public record BorrowRequestCreateRequest(
         @NotNull
-        Long listingId   // borrower is current user (taken from JWT)
+        Long listingId,   // borrower is current user (taken from JWT)
+        Integer statusId
 ) {
+
+    public BorrowRequestCreateRequest {
+        if (statusId == null)
+            statusId = 1;
+    }
 }
