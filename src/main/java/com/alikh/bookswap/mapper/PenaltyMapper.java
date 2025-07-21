@@ -29,10 +29,10 @@ public class PenaltyMapper {
         return new PenaltyDetailResponse(
                 penalty.getId(),
                 penalty.getRequest() != null ? penalty.getRequest().getId() : null,
-                penalty.getType() != null ? penalty.getType().getId() : null,
                 penalty.getAmount(),
                 penalty.getReason(),
-                penalty.getResolvedBy() != null ? penalty.getResolvedBy().getId() : null,
+                penalty.getType() != null ? penalty.getType().getCode() : null,
+                penalty.getResolvedBy() != null ? penalty.getResolvedBy().getName() : null,
                 penalty.getResolvedAt(),
                 penalty.getIsDeleted()
         );
@@ -41,12 +41,10 @@ public class PenaltyMapper {
     /* ---------- Create / Update requests -> Entity ---------- */
 
     public Penalty fromCreate(PenaltyCreateRequest request,
-                              Long penaltyId,
                               BorrowRequest borrowReq,
                               PenaltyType type) {
 
         return Penalty.builder()
-                .id(penaltyId)
                 .request(borrowReq)
                 .type(type)
                 .amount(request.amount())
