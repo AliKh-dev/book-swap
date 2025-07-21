@@ -25,9 +25,11 @@ public class BorrowRequestMapper {
     public BorrowRequestDetailResponse toDetail(BorrowRequest req) {
         return new BorrowRequestDetailResponse(
                 req.getId(),
-                req.getListing()  != null ? req.getListing().getId()  : null,
-                req.getBorrower() != null ? req.getBorrower().getId() : null,
-                req.getStatus()   != null ? req.getStatus().getId()   : null,
+                req.getListing() != null ? req.getListing().getId() : null,
+                req.getBorrower().getName(),
+                req.getStatus() != null ? req.getStatus().getCode() : null,
+                req.getPenalty() != null ? req.getPenalty().getAmount() : null,
+                req.getPenalty() != null ? req.getPenalty().getReason() : null,
                 req.getRequestedAt(),
                 req.getApprovedAt(),
                 req.getRejectedAt(),
