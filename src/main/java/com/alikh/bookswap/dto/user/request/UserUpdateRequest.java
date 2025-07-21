@@ -7,9 +7,6 @@ public record UserUpdateRequest(
         String email,
 
         @NotBlank
-        String password,
-
-        @NotBlank
         String name,
 
         @NotNull
