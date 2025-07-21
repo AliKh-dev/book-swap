@@ -12,7 +12,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserRole extends BaseEntity {
+public class Role extends BaseEntity {
 
     @Id
     @Column(name = "id")

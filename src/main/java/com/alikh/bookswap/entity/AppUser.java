@@ -32,7 +32,7 @@ public class AppUser extends SoftDeletableEntity {
     // Relationships
     @ManyToOne
     @JoinColumn(name = "role_id")
-    private UserRole role;
+    private Role role;
 
     @OneToMany(mappedBy = "owner")
     private Set<Book> books;
