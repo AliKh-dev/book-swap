@@ -30,8 +30,8 @@ public class BookMapper {
                 book.getGenre(),
                 book.getIsbn(),
                 book.getDescription(),
-                book.getCondition() != null ? book.getCondition().getId() : null,
-                book.getOwner() != null ? book.getOwner().getId() : null,
+                book.getCondition() != null ? book.getCondition().getCode() : null,
+                book.getOwner() != null ? book.getOwner().getName() : null,
                 book.getCreatedAt()
         );
     }
@@ -67,10 +67,10 @@ public class BookMapper {
     public void applyPatch(Book book,
                            BookPatchRequest request,
                            BookCondition condition) {
-        if (request.title() != null)       book.setTitle(request.title());
-        if (request.author() != null)      book.setAuthor(request.author());
-        if (request.genre() != null)       book.setGenre(request.genre());
-        if (request.isbn() != null)        book.setIsbn(request.isbn());
+        if (request.title() != null) book.setTitle(request.title());
+        if (request.author() != null) book.setAuthor(request.author());
+        if (request.genre() != null) book.setGenre(request.genre());
+        if (request.isbn() != null) book.setIsbn(request.isbn());
         if (request.description() != null) book.setDescription(request.description());
         if (request.conditionId() != null) book.setCondition(condition);
     }
