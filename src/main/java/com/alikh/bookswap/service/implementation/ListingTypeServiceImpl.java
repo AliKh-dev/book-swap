@@ -1,0 +1,70 @@
+package com.alikh.bookswap.service.implementation;
+
+import com.alikh.bookswap.dto.listingtype.request.*;
+import com.alikh.bookswap.dto.listingtype.response.*;
+import com.alikh.bookswap.entity.ListingType;
+import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.mapper.ListingTypeMapper;
+import com.alikh.bookswap.repository.ListingTypeRepository;
+import com.alikh.bookswap.service.contract.ListingTypeService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ListingTypeServiceImpl implements ListingTypeService {
+
+    private final ListingTypeRepository repo;
+    private final ListingTypeMapper mapper;
+
+    @Override
+    public ListingTypeSummaryResponse create(ListingTypeCreateRequest dto) {
+        Integer nextId = repo.findTopByOrderByIdDesc()
+                .map(ListingType::getId)
+                .orElse(0) + 1;
+
+        ListingType entity = mapper.fromCreate(dto, nextId);
+        repo.save(entity);
+        return mapper.toSummary(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ListingTypeDetailResponse get(Integer id) {
+        return mapper.toDetail(repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("ListingType", id)));
+    }
+
+    @Override
+    public void update(Integer id, ListingTypeUpdateRequest dto) {
+        ListingType entity = repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("ListingType", id));
+        mapper.applyUpdate(entity, dto);
+    }
+
+    @Override
+    public void patch(Integer id, ListingTypePatchRequest dto) {
+        ListingType entity = repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("ListingType", id));
+        mapper.applyPatch(entity, dto);
+    }
+
+    @Override
+    public void delete(Integer id) {
+        if (!repo.existsById(id)) throw new NotFoundException("ListingType", id);
+        repo.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ListingTypeSummaryResponse> list() {
+        return repo.findAll().stream()
+                .map(mapper::toSummary)
+                .toList();
+    }
+}
