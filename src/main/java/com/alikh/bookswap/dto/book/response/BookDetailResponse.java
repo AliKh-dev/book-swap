@@ -9,8 +9,8 @@ public record BookDetailResponse(
         String genre,
         String isbn,
         String description,
-        Integer conditionId,
-        Long ownerId,               // optional: expose owner
+        String condition,
+        String ownerName,
         LocalDateTime createdAt     // if I want audit info
 ) {
 }
