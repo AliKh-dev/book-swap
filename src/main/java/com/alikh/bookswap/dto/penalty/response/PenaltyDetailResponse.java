@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 public record PenaltyDetailResponse(
         Long id,
         Long requestId,
-        Integer typeId,
         BigDecimal amount,
         String reason,
-        Long resolvedById,
+        String penaltyType,
+        String resolvedByName,
         LocalDateTime resolvedAt,
         Boolean isDeleted
 ) {
