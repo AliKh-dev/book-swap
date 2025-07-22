@@ -1,8 +1,8 @@
 package com.alikh.bookswap.controller;
 
-import com.alikh.bookswap.dto.bookcondition.response.*;
-import com.alikh.bookswap.dto.bookcondition.request.*;
-import com.alikh.bookswap.service.contract.BookConditionService;
+import com.alikh.bookswap.dto.book.request.*;
+import com.alikh.bookswap.dto.book.response.*;
+import com.alikh.bookswap.service.contract.BookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,42 +16,42 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookController {
 
-    private final BookConditionService svc;
+    private final BookService service;
 
     @PostMapping
-    public ResponseEntity<BookConditionSummaryResponse> create(
+    public ResponseEntity<BookSummaryResponse> create(
             UriComponentsBuilder uriBuilder,
-            @RequestBody @Valid BookConditionCreateRequest dto) {
-        var bookCondition = svc.create(dto);
-        var uri = uriBuilder.path("/book-conditions/{id}").buildAndExpand(bookCondition.id()).toUri();
+            @RequestBody @Valid BookCreateRequest dto) {
+        var book = service.create(dto);
+        var uri = uriBuilder.path("api/books/{id}").buildAndExpand(book.id()).toUri();
 
-        return ResponseEntity.created(uri).body(bookCondition);
+        return ResponseEntity.created(uri).body(book);
     }
 
     @GetMapping
-    public List<BookConditionSummaryResponse> list() {
-        return svc.list();
+    public List<BookSummaryResponse> list() {
+        return service.list();
     }
 
     @GetMapping("/{id}")
-    public BookConditionDetailResponse get(@PathVariable Integer id) {
-        return svc.get(id);
+    public BookDetailResponse get(@PathVariable Long id) {
+        return service.get(id);
     }
 
     @PutMapping("/{id}")
-    public void update(@PathVariable Integer id,
-                       @RequestBody @Valid BookConditionUpdateRequest dto) {
-        svc.update(id, dto);
+    public void update(@PathVariable Long id,
+                       @RequestBody @Valid BookUpdateRequest dto) {
+        service.update(id, dto);
     }
 
     @PatchMapping("/{id}")
-    public void patch(@PathVariable Integer id,
-                      @RequestBody @Valid BookConditionPatchRequest dto) {
-        svc.patch(id, dto);
+    public void patch(@PathVariable Long id,
+                      @RequestBody @Valid BookPatchRequest dto) {
+        service.patch(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
-        svc.delete(id);
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 }
