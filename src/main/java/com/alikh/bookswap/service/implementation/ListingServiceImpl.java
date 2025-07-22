@@ -25,10 +25,10 @@ public class ListingServiceImpl implements ListingService {
     private final ListingMapper mapper;
 
     @Override
-    public ListingSummaryResponse create(Long bookId, ListingCreateRequest dto) {
+    public ListingSummaryResponse create(ListingCreateRequest dto) {
 
-        Book book = bookRepo.findById(bookId)
-                .orElseThrow(() -> new NotFoundException("Book", bookId));
+        Book book = bookRepo.findById(dto.bookId())
+                .orElseThrow(() -> new NotFoundException("Book", dto.bookId()));
 
         ListingType type = typeRepo.findById(dto.typeId())
                 .orElseThrow(() -> new NotFoundException("ListingType", dto.typeId()));
