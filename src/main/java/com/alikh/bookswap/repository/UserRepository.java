@@ -7,8 +7,14 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
+
 
 @Repository
 public interface UserRepository extends JpaRepository<AppUser, Long> {
     Page<AppUser> findByRole(Role role, Pageable pageable);
+
+    Optional<AppUser> findByEmail(String email);
+
+    boolean existsByEmail(String email);
 }
