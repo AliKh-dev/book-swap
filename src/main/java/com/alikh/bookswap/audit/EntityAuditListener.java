@@ -30,8 +30,8 @@ public class EntityAuditListener {
         entity.setCreatedBy(user);
         entity.setCreatedAt(now);
 
-        entity.setUpdatedBy(user);
-        entity.setUpdatedAt(now);
+        entity.setUpdatedBy(null);
+        entity.setUpdatedAt(null);
     }
 
     @PreUpdate
@@ -39,12 +39,5 @@ public class EntityAuditListener {
         String user = currentUser();
         entity.setUpdatedBy(user);
         entity.setUpdatedAt(LocalDateTime.now());
-    }
-
-    @PreRemove
-    public void onSoftDelete(SoftDeletableEntity entity) {
-        entity.setIsDeleted(true);
-        entity.setDeletedBy(currentUser());
-        entity.setDeletedAt(LocalDateTime.now());
     }
 }
