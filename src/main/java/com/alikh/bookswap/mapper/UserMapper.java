@@ -13,6 +13,7 @@ public class UserMapper {
 
     public UserSummaryResponse toSummary(AppUser user) {
         return new UserSummaryResponse(
+                user.getId(),
                 user.getEmail(),
                 user.getName(),
                 user.getRole().getId()
