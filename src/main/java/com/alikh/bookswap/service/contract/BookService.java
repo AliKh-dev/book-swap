@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface BookService {
 
-    BookSummaryResponse create(BookCreateRequest dto, Long ownerId);
+    BookSummaryResponse create(BookCreateRequest dto);
 
     BookDetailResponse get(Long id);
 

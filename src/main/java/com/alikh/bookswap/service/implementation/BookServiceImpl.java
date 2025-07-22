@@ -25,13 +25,13 @@ public class BookServiceImpl implements BookService {
     private final BookMapper mapper;
 
     @Override
-    public BookSummaryResponse create(BookCreateRequest dto, Long ownerId) {
+    public BookSummaryResponse create(BookCreateRequest dto) {
 
         BookCondition condition = conditionRepo.findById(dto.conditionId())
                 .orElseThrow(() -> new NotFoundException("BookCondition", dto.conditionId()));
 
-        AppUser owner = userRepo.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("User", ownerId));
+        AppUser owner = userRepo.findById(dto.ownerId())
+                .orElseThrow(() -> new NotFoundException("User", dto.ownerId()));
 
         Book entity = mapper.fromCreate(dto, condition, owner);
         bookRepo.save(entity);
