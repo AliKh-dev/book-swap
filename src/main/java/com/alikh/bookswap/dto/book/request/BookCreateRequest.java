@@ -21,6 +21,9 @@ public record BookCreateRequest(
         String description,
 
         @NotNull
-        Integer conditionId        // FK to book_condition
+        Long ownerId,
+
+        @NotNull
+        Integer conditionId
 ) {
 }
