@@ -3,6 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.requeststatus.request.*;
 import com.alikh.bookswap.dto.requeststatus.response.*;
 import com.alikh.bookswap.entity.RequestStatus;
+import com.alikh.bookswap.exception.CodeAlreadyExists;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.RequestStatusMapper;
 import com.alikh.bookswap.repository.RequestStatusRepository;
@@ -18,8 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class RequestStatusServiceImpl implements RequestStatusService {
-
     private final RequestStatusRepository repo;
+
     private final RequestStatusMapper mapper;
 
     @Override
@@ -27,10 +28,18 @@ public class RequestStatusServiceImpl implements RequestStatusService {
         Integer nextId = repo.findTopByOrderByIdDesc()
                 .map(RequestStatus::getId)
                 .orElse(0) + 1;
-
+        checkCodeDuplication(dto.code());
         RequestStatus entity = mapper.fromCreate(dto, nextId);
         repo.save(entity);
         return mapper.toSummary(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RequestStatusSummaryResponse> list() {
+        return repo.findAll().stream()
+                .map(mapper::toSummary)
+                .toList();
     }
 
     @Override
@@ -44,6 +53,7 @@ public class RequestStatusServiceImpl implements RequestStatusService {
     public void update(Integer id, RequestStatusUpdateRequest dto) {
         RequestStatus entity = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException("RequestStatus", id));
+        checkCodeDuplication(dto.code());
         mapper.applyUpdate(entity, dto);
     }
 
@@ -51,6 +61,7 @@ public class RequestStatusServiceImpl implements RequestStatusService {
     public void patch(Integer id, RequestStatusPatchRequest dto) {
         RequestStatus entity = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException("RequestStatus", id));
+        if (dto.code() != null) checkCodeDuplication(dto.code());
         mapper.applyPatch(entity, dto);
     }
 
@@ -60,11 +71,8 @@ public class RequestStatusServiceImpl implements RequestStatusService {
         repo.deleteById(id);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<RequestStatusSummaryResponse> list() {
-        return repo.findAll().stream()
-                .map(mapper::toSummary)
-                .toList();
+    private void checkCodeDuplication(String dto) {
+        if (repo.findByCode(dto).isPresent())
+            throw new CodeAlreadyExists("RequestStatus", dto);
     }
 }

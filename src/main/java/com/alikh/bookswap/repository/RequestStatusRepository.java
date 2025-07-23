@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface RequestStatusRepository extends JpaRepository<RequestStatus, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<RequestStatus> findTopByOrderByIdDesc();
+
+    Optional<RequestStatus> findByCode(String code);
 }
