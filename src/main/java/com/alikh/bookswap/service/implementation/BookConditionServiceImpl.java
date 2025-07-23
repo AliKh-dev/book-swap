@@ -3,6 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.bookcondition.request.*;
 import com.alikh.bookswap.dto.bookcondition.response.*;
 import com.alikh.bookswap.entity.BookCondition;
+import com.alikh.bookswap.exception.CodeAlreadyExists;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.BookConditionMapper;
 import com.alikh.bookswap.repository.BookConditionRepository;
@@ -27,7 +28,7 @@ public class BookConditionServiceImpl implements BookConditionService {
         Integer nextId = repo.findTopByOrderByIdDesc()
                 .map(BookCondition::getId)
                 .orElse(0) + 1;
-
+        checkCodeDuplication(dto.code());
         BookCondition entity = mapper.fromCreate(dto, nextId);
         repo.save(entity);
         return mapper.toSummary(entity);
@@ -44,6 +45,7 @@ public class BookConditionServiceImpl implements BookConditionService {
     public void update(Integer id, BookConditionUpdateRequest dto) {
         BookCondition entity = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException("BookCondition", id));
+        checkCodeDuplication(dto.code());
         mapper.applyUpdate(entity, dto);
     }
 
@@ -51,6 +53,8 @@ public class BookConditionServiceImpl implements BookConditionService {
     public void patch(Integer id, BookConditionPatchRequest dto) {
         BookCondition entity = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException("BookCondition", id));
+        if (dto.code() != null)
+            checkCodeDuplication(dto.code());
         mapper.applyPatch(entity, dto);
     }
 
@@ -66,5 +70,10 @@ public class BookConditionServiceImpl implements BookConditionService {
         return repo.findAll().stream()
                 .map(mapper::toSummary)
                 .toList();
+    }
+
+    private void checkCodeDuplication(String code) {
+        if (repo.existsByCode(code))
+            throw new CodeAlreadyExists("BookCondition", code);
     }
 }

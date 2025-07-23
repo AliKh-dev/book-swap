@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface BookConditionRepository extends JpaRepository<BookCondition, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<BookCondition> findTopByOrderByIdDesc();
+
+    boolean existsByCode(String code);
 }
