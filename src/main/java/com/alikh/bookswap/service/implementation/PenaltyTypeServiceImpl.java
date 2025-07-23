@@ -3,6 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.penaltytype.request.*;
 import com.alikh.bookswap.dto.penaltytype.response.*;
 import com.alikh.bookswap.entity.PenaltyType;
+import com.alikh.bookswap.exception.CodeAlreadyExists;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.PenaltyTypeMapper;
 import com.alikh.bookswap.repository.PenaltyTypeRepository;
@@ -27,10 +28,18 @@ public class PenaltyTypeServiceImpl implements PenaltyTypeService {
         Integer nextId = repo.findTopByOrderByIdDesc()
                 .map(PenaltyType::getId)
                 .orElse(0) + 1;
-
+        checkCodeDuplication(dto.code());
         PenaltyType entity = mapper.fromCreate(dto, nextId);
         repo.save(entity);
         return mapper.toSummary(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PenaltyTypeSummaryResponse> list() {
+        return repo.findAll().stream()
+                .map(mapper::toSummary)
+                .toList();
     }
 
     @Override
@@ -44,6 +53,7 @@ public class PenaltyTypeServiceImpl implements PenaltyTypeService {
     public void update(Integer id, PenaltyTypeUpdateRequest dto) {
         PenaltyType entity = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException("PenaltyType", id));
+        checkCodeDuplication(dto.code());
         mapper.applyUpdate(entity, dto);
     }
 
@@ -51,6 +61,7 @@ public class PenaltyTypeServiceImpl implements PenaltyTypeService {
     public void patch(Integer id, PenaltyTypePatchRequest dto) {
         PenaltyType entity = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException("PenaltyType", id));
+        checkCodeDuplication(dto.code());
         mapper.applyPatch(entity, dto);
     }
 
@@ -60,11 +71,8 @@ public class PenaltyTypeServiceImpl implements PenaltyTypeService {
         repo.deleteById(id);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<PenaltyTypeSummaryResponse> list() {
-        return repo.findAll().stream()
-                .map(mapper::toSummary)
-                .toList();
+    private void checkCodeDuplication(String dto) {
+        if (repo.existsByCode(dto))
+            throw new CodeAlreadyExists("Role", dto);
     }
 }

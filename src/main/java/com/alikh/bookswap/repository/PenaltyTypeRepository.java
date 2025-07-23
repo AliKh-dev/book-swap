@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface PenaltyTypeRepository extends JpaRepository<PenaltyType, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<PenaltyType> findTopByOrderByIdDesc();
+
+    boolean existsByCode(String code);
 }
