@@ -2,12 +2,15 @@ package com.alikh.bookswap.mapper;
 
 import com.alikh.bookswap.dto.role.request.*;
 import com.alikh.bookswap.dto.role.response.*;
+import com.alikh.bookswap.dto.user.response.UserForRoleResponse;
 import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
 import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.entity.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 
 @Component
@@ -22,9 +25,11 @@ public class RoleMapper {
         return new RoleSummaryResponse(role.getId(), role.getCode());
     }
 
-    public RoleDetailResponse toDetail(Role role, Page<AppUser> users) {
-        Page<UserSummaryResponse> userDtos = users.map(userMapper::toSummary);
-        return new RoleDetailResponse(role.getId(), role.getCode(), userDtos);
+    public RoleDetailResponse toDetail(Role role, List<AppUser> users) {
+        return new RoleDetailResponse(
+                role.getId(),
+                role.getCode(),
+                users.stream().map(userMapper::toForRole).toList());
     }
 
     /* ---------- Create / Update -> Entity ---------- */
