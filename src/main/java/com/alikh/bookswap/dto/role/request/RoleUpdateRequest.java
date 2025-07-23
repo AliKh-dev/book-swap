@@ -6,4 +6,5 @@ public record RoleUpdateRequest(
         @NotBlank
         @Size(max = 20)
         String code
-) {}
+) {
+}

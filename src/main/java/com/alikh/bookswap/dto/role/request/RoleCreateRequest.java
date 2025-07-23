@@ -5,4 +5,5 @@ import jakarta.validation.constraints.*;
 public record RoleCreateRequest(
         @NotBlank
         @Size(max = 20)
-        String code) {}
+        String code) {
+}
