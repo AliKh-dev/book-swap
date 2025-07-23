@@ -1,10 +1,12 @@
 package com.alikh.bookswap.dto.role.response;
 
-import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
-import org.springframework.data.domain.Page;
+import com.alikh.bookswap.dto.user.response.UserForRoleResponse;
+
+import java.util.List;
 
 public record RoleDetailResponse(
         Integer id,
         String code,
-        Page<UserSummaryResponse> users
-) {}
+        List<UserForRoleResponse> users
+) {
+}
