@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface ListingTypeRepository extends JpaRepository<ListingType, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<ListingType> findTopByOrderByIdDesc();
+
+    boolean existsByCode(String code);
 }

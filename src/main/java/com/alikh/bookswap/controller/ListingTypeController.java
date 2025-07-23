@@ -43,8 +43,7 @@ public class ListingTypeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ListingTypeDetailResponse> get(
-            @PathVariable Integer id) {
+    public ResponseEntity<ListingTypeDetailResponse> get(@PathVariable Integer id) {
         return ResponseEntity.ok(service.get(id));
     }
 
