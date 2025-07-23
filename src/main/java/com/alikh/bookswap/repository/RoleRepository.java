@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface RoleRepository extends JpaRepository<Role, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Role> findTopByOrderByIdDesc();
+
+    Optional<Role> findByCode(String code);
 }

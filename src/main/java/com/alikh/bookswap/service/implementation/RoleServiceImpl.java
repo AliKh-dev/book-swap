@@ -4,6 +4,7 @@ import com.alikh.bookswap.dto.role.request.*;
 import com.alikh.bookswap.dto.role.response.*;
 import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.entity.Role;
+import com.alikh.bookswap.exception.CodeAlreadyExists;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.RoleMapper;
 import com.alikh.bookswap.repository.UserRepository;
@@ -33,6 +34,9 @@ public class RoleServiceImpl implements RoleService {
     public RoleSummaryResponse create(RoleCreateRequest dto) {
         Integer nextId = roleRepo.findTopByOrderByIdDesc()
                 .map(Role::getId).orElse(0) + 1;
+
+        checkCodeDuplication(dto.code());
+
         Role role = mapper.fromCreate(dto, nextId);
         roleRepo.save(role);
         return mapper.toSummary(role);
@@ -47,7 +51,7 @@ public class RoleServiceImpl implements RoleService {
         Page<AppUser> users = userRepo.findByRole(
                 role, PageRequest.of(page, PAGE_SIZE, Sort.by("id").ascending()));
 
-        return mapper.toDetail(role, users);
+        return mapper.toDetail(role, users.getContent());
     }
 
     @Override
@@ -62,6 +66,7 @@ public class RoleServiceImpl implements RoleService {
     public void update(Integer id, RoleUpdateRequest dto) {
         Role role = roleRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Role", id));
+        checkCodeDuplication(dto.code());
         mapper.applyUpdate(role, dto);
     }
 
@@ -69,6 +74,7 @@ public class RoleServiceImpl implements RoleService {
     public void patch(Integer id, RolePatchRequest dto) {
         Role role = roleRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Role", id));
+        if (dto.code() != null) checkCodeDuplication(dto.code());
         mapper.applyPatch(role, dto);
     }
 
@@ -77,5 +83,10 @@ public class RoleServiceImpl implements RoleService {
         if (!roleRepo.existsById(id))
             throw new NotFoundException("Role", id);
         roleRepo.deleteById(id);
+    }
+
+    private void checkCodeDuplication(String dto) {
+        if (roleRepo.findByCode(dto).isPresent())
+            throw new CodeAlreadyExists("Role", dto);
     }
 }
