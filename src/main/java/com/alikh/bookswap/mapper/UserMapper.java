@@ -29,6 +29,14 @@ public class UserMapper {
         );
     }
 
+    public UserForRoleResponse toForRole(AppUser user) {
+        return new UserForRoleResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName()
+        );
+    }
+
     /* ---------- Create / Update → Entity ---------- */
 
     public AppUser fromCreate(UserCreateRequest request, Role role, String hashedPassword) {
