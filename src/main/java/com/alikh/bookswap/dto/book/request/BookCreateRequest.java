@@ -14,14 +14,11 @@ public record BookCreateRequest(
         @Size(max = 100)
         String genre,
 
-        @Size(max = 20)
+        @Size(max = 13)
         String isbn,
 
         @Size(max = 1000)
         String description,
-
-        @NotNull
-        Long ownerId,
 
         @NotNull
         Integer conditionId

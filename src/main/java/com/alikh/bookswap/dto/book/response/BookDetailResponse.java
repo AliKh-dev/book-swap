@@ -11,6 +11,6 @@ public record BookDetailResponse(
         String description,
         String condition,
         String ownerName,
-        LocalDateTime createdAt     // if I want audit info
+        LocalDateTime createdAt
 ) {
 }

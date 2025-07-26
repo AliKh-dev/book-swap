@@ -1,11 +1,17 @@
 package com.alikh.bookswap.controller;
 
-import com.alikh.bookswap.dto.book.request.*;
-import com.alikh.bookswap.dto.book.response.*;
+import com.alikh.bookswap.dto.book.request.BookCreateRequest;
+import com.alikh.bookswap.dto.book.request.BookPatchRequest;
+import com.alikh.bookswap.dto.book.request.BookUpdateRequest;
+import com.alikh.bookswap.dto.book.response.BookDetailResponse;
+import com.alikh.bookswap.dto.book.response.BookSummaryResponse;
+import com.alikh.bookswap.service.Jwt;
 import com.alikh.bookswap.service.contract.BookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -21,37 +27,56 @@ public class BookController {
     @PostMapping
     public ResponseEntity<BookSummaryResponse> create(
             UriComponentsBuilder uriBuilder,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid BookCreateRequest dto) {
-        var book = service.create(dto);
-        var uri = uriBuilder.path("api/books/{id}").buildAndExpand(book.id()).toUri();
 
-        return ResponseEntity.created(uri).body(book);
+        var response = service.create(dto, jwt.getUserId());
+        var uri = uriBuilder.path("api/books/{id}").buildAndExpand(response.id()).toUri();
+
+        return ResponseEntity.created(uri).body(response);
     }
 
     @GetMapping
-    public List<BookSummaryResponse> list() {
-        return service.list();
+    public ResponseEntity<List<BookSummaryResponse>> list() {
+        return ResponseEntity.ok(service.list());
     }
 
     @GetMapping("/{id}")
-    public BookDetailResponse get(@PathVariable Long id) {
-        return service.get(id);
+    public ResponseEntity<BookDetailResponse> get(@PathVariable Long id) {
+        return ResponseEntity.ok(service.get(id));
     }
 
     @PutMapping("/{id}")
-    public void update(@PathVariable Long id,
-                       @RequestBody @Valid BookUpdateRequest dto) {
-        service.update(id, dto);
+    public ResponseEntity<BookSummaryResponse> update(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid BookUpdateRequest dto) {
+
+        return ResponseEntity.ok(service.update(id, dto, jwt.getUserId()));
     }
 
     @PatchMapping("/{id}")
-    public void patch(@PathVariable Long id,
-                      @RequestBody @Valid BookPatchRequest dto) {
-        service.patch(id, dto);
+    public ResponseEntity<BookSummaryResponse> patch(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid BookPatchRequest dto) {
+
+        return ResponseEntity.ok(service.patch(id, dto, jwt.getUserId()));
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> softDelete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        service.softDelete(id, jwt.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/hard-delete/{id}")
+    public ResponseEntity<Void> hardDelete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        service.hardDelete(id, jwt.getUserId());
+        return ResponseEntity.noContent().build();
     }
 }
