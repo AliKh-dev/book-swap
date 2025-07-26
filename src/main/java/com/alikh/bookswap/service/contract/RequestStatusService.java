@@ -9,13 +9,13 @@ import java.util.List;
 public interface RequestStatusService {
     RequestStatusSummaryResponse create(RequestStatusCreateRequest dto);
 
+    List<RequestStatusSummaryResponse> list();
+
     RequestStatusDetailResponse get(Integer id);
 
-    void update(Integer id, RequestStatusUpdateRequest dto);
+    RequestStatusSummaryResponse update(Integer id, RequestStatusUpdateRequest dto);
 
-    void patch(Integer id, RequestStatusPatchRequest dto);
+    RequestStatusSummaryResponse patch(Integer id, RequestStatusPatchRequest dto);
 
     void delete(Integer id);
-
-    List<RequestStatusSummaryResponse> list();
 }

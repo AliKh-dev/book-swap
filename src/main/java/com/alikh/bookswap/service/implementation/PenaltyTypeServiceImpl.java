@@ -28,8 +28,8 @@ public class PenaltyTypeServiceImpl implements PenaltyTypeService {
         Integer nextId = repo.findTopByOrderByIdDesc()
                 .map(PenaltyType::getId)
                 .orElse(0) + 1;
-        checkCodeDuplication(dto.code());
-        PenaltyType entity = mapper.fromCreate(dto, nextId);
+        checkCodeUniquenessOrThrow(dto.code());
+        var entity = mapper.fromCreate(dto, nextId);
         repo.save(entity);
         return mapper.toSummary(entity);
     }
@@ -45,34 +45,39 @@ public class PenaltyTypeServiceImpl implements PenaltyTypeService {
     @Override
     @Transactional(readOnly = true)
     public PenaltyTypeDetailResponse get(Integer id) {
-        return mapper.toDetail(repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("PenaltyType", id)));
+        return mapper.toDetail(fetchPenaltyTypeOrThrow(id));
     }
 
     @Override
-    public void update(Integer id, PenaltyTypeUpdateRequest dto) {
-        PenaltyType entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("PenaltyType", id));
-        checkCodeDuplication(dto.code());
+    public PenaltyTypeSummaryResponse update(Integer id, PenaltyTypeUpdateRequest dto) {
+        var entity = fetchPenaltyTypeOrThrow(id);
+        checkCodeUniquenessOrThrow(dto.code());
         mapper.applyUpdate(entity, dto);
+        return mapper.toSummary(entity);
     }
 
     @Override
-    public void patch(Integer id, PenaltyTypePatchRequest dto) {
-        PenaltyType entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("PenaltyType", id));
-        checkCodeDuplication(dto.code());
+    public PenaltyTypeSummaryResponse patch(Integer id, PenaltyTypePatchRequest dto) {
+        PenaltyType entity = fetchPenaltyTypeOrThrow(id);
+        if (dto.code() != null)
+            checkCodeUniquenessOrThrow(dto.code());
         mapper.applyPatch(entity, dto);
+        return mapper.toSummary(entity);
     }
 
     @Override
     public void delete(Integer id) {
-        if (!repo.existsById(id)) throw new NotFoundException("PenaltyType", id);
+        fetchPenaltyTypeOrThrow(id);
         repo.deleteById(id);
     }
 
-    private void checkCodeDuplication(String dto) {
+    private PenaltyType fetchPenaltyTypeOrThrow(Integer id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("PenaltyType", id));
+    }
+
+    private void checkCodeUniquenessOrThrow(String dto) {
         if (repo.existsByCode(dto))
-            throw new CodeAlreadyExistsException("Role", dto);
+            throw new CodeAlreadyExistsException("PenaltyType", dto);
     }
 }

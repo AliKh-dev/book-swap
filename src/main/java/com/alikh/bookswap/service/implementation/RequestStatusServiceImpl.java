@@ -19,8 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class RequestStatusServiceImpl implements RequestStatusService {
-    private final RequestStatusRepository repo;
 
+    private final RequestStatusRepository repo;
     private final RequestStatusMapper mapper;
 
     @Override
@@ -28,8 +28,8 @@ public class RequestStatusServiceImpl implements RequestStatusService {
         Integer nextId = repo.findTopByOrderByIdDesc()
                 .map(RequestStatus::getId)
                 .orElse(0) + 1;
-        checkCodeDuplication(dto.code());
-        RequestStatus entity = mapper.fromCreate(dto, nextId);
+        checkCodeUniquenessOrThrow(dto.code());
+        var entity = mapper.fromCreate(dto, nextId);
         repo.save(entity);
         return mapper.toSummary(entity);
     }
@@ -45,34 +45,39 @@ public class RequestStatusServiceImpl implements RequestStatusService {
     @Override
     @Transactional(readOnly = true)
     public RequestStatusDetailResponse get(Integer id) {
-        return mapper.toDetail(repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("RequestStatus", id)));
+        return mapper.toDetail(fetchRequestStatusOrThrow(id));
     }
 
     @Override
-    public void update(Integer id, RequestStatusUpdateRequest dto) {
-        RequestStatus entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("RequestStatus", id));
-        checkCodeDuplication(dto.code());
+    public RequestStatusSummaryResponse update(Integer id, RequestStatusUpdateRequest dto) {
+        var entity = fetchRequestStatusOrThrow(id);
+        checkCodeUniquenessOrThrow(dto.code());
         mapper.applyUpdate(entity, dto);
+        return mapper.toSummary(entity);
     }
 
     @Override
-    public void patch(Integer id, RequestStatusPatchRequest dto) {
-        RequestStatus entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("RequestStatus", id));
-        if (dto.code() != null) checkCodeDuplication(dto.code());
+    public RequestStatusSummaryResponse patch(Integer id, RequestStatusPatchRequest dto) {
+        var entity = fetchRequestStatusOrThrow(id);
+        if (dto.code() != null)
+            checkCodeUniquenessOrThrow(dto.code());
         mapper.applyPatch(entity, dto);
+        return mapper.toSummary(entity);
     }
 
     @Override
     public void delete(Integer id) {
-        if (!repo.existsById(id)) throw new NotFoundException("RequestStatus", id);
+        fetchRequestStatusOrThrow(id);
         repo.deleteById(id);
     }
 
-    private void checkCodeDuplication(String dto) {
-        if (repo.findByCode(dto).isPresent())
+    private RequestStatus fetchRequestStatusOrThrow(Integer id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("RequestStatus", id));
+    }
+
+    private void checkCodeUniquenessOrThrow(String dto) {
+        if (repo.existsByCode(dto))
             throw new CodeAlreadyExistsException("RequestStatus", dto);
     }
 }

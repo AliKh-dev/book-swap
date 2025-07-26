@@ -8,13 +8,13 @@ import java.util.List;
 public interface ListingTypeService {
     ListingTypeSummaryResponse create(ListingTypeCreateRequest dto);
 
+    List<ListingTypeSummaryResponse> list();
+
     ListingTypeDetailResponse get(Integer id);
 
-    void update(Integer id, ListingTypeUpdateRequest dto);
+    ListingTypeSummaryResponse update(Integer id, ListingTypeUpdateRequest dto);
 
-    void patch(Integer id, ListingTypePatchRequest dto);
+    ListingTypeSummaryResponse patch(Integer id, ListingTypePatchRequest dto);
 
     void delete(Integer id);
-
-    List<ListingTypeSummaryResponse> list();
 }

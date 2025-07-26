@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,7 +29,7 @@ public class BookConditionServiceImpl implements BookConditionService {
                 .map(BookCondition::getId)
                 .orElse(0) + 1;
         checkCodeUniquenessOrThrow(dto.code());
-        BookCondition entity = mapper.fromCreate(dto, nextId);
+        var entity = mapper.fromCreate(dto, nextId);
         repo.save(entity);
         return mapper.toSummary(entity);
     }
@@ -49,7 +50,7 @@ public class BookConditionServiceImpl implements BookConditionService {
 
     @Override
     public BookConditionSummaryResponse update(Integer id, BookConditionUpdateRequest dto) {
-        BookCondition entity = fetchBookConditionOrThrow(id);
+        var entity = fetchBookConditionOrThrow(id);
         checkCodeUniquenessOrThrow(dto.code());
         mapper.applyUpdate(entity, dto);
         return mapper.toSummary(entity);
@@ -57,7 +58,7 @@ public class BookConditionServiceImpl implements BookConditionService {
 
     @Override
     public BookConditionSummaryResponse patch(Integer id, BookConditionPatchRequest dto) {
-        BookCondition entity = fetchBookConditionOrThrow(id);
+        var entity = fetchBookConditionOrThrow(id);
         if (dto.code() != null)
             checkCodeUniquenessOrThrow(dto.code());
         mapper.applyPatch(entity, dto);
@@ -66,8 +67,8 @@ public class BookConditionServiceImpl implements BookConditionService {
 
     @Override
     public void delete(Integer id) {
-        var entity = fetchBookConditionOrThrow(id);
-        repo.deleteById(entity.getId());
+        fetchBookConditionOrThrow(id);
+        repo.deleteById(id);
     }
 
     private BookCondition fetchBookConditionOrThrow(Integer id) {
