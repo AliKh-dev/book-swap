@@ -23,10 +23,13 @@ public class Jwt {
         return Long.valueOf(claims.getSubject());
     }
 
-    // TODO: implement getting role from token and cast it to Role entity
-    //    public Role getRole() {
-    //        code
-    //    }
+    public String getRoleCode() {
+        return claims.get("role").toString();
+    }
+
+    public String getName() {
+        return claims.get("name").toString();
+    }
 
     public String toString() {
         return Jwts.builder()

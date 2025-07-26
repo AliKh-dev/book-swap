@@ -1,25 +1,23 @@
 package com.alikh.bookswap.controller;
 
 import com.alikh.bookswap.config.JwtConfig;
-import com.alikh.bookswap.dto.auth.ChangePasswordRequest;
-import com.alikh.bookswap.dto.auth.JwtResponse;
-import com.alikh.bookswap.dto.auth.LoginRequest;
-import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
-import com.alikh.bookswap.mapper.UserMapper;
+import com.alikh.bookswap.dto.auth.request.ChangePasswordRequest;
+import com.alikh.bookswap.dto.auth.request.LoginRequest;
+import com.alikh.bookswap.dto.auth.request.RegisterRequest;
+import com.alikh.bookswap.dto.auth.response.LoginResponse;
+import com.alikh.bookswap.dto.auth.response.RefreshResponse;
+import com.alikh.bookswap.dto.auth.response.RegisterResponse;
 import com.alikh.bookswap.service.AuthService;
 import com.alikh.bookswap.service.Jwt;
-import com.alikh.bookswap.service.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/auth")
@@ -27,67 +25,87 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService service;
-    private final JwtService jwtService;
     private final JwtConfig jwtConfig;
-    private final UserMapper userMapper;
-    private final AuthenticationManager authManager;
 
+    @PostMapping("/register")
+    public ResponseEntity<RegisterResponse> register(
+            UriComponentsBuilder uriBuilder,
+            @Valid @RequestBody RegisterRequest request) {
+        var response = service.register(request);
+        var uri = uriBuilder.path("/api/users/{id}").buildAndExpand(response.id()).toUri();
+        return ResponseEntity.created(uri).body(response);
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(
+    public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletResponse response) {
-        authManager.authenticate(new UsernamePasswordAuthenticationToken(
-                request.email(),
-                request.password()));
-
-        var user = service.getUserByEmail(request);
-
-        var accessToken = jwtService.generateAccessToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
-
-        var cookie = new Cookie("refreshToken", refreshToken.toString());
-        cookie.setHttpOnly(true);
-        cookie.setPath("/auth/refresh");
-        cookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
-        cookie.setSecure(true);
-        response.addCookie(cookie);
-
-        return ResponseEntity.ok(new JwtResponse(accessToken.toString()));
+        var result = service.login(request);
+        response.addCookie(buildRefreshTokenCookie(result.refreshToken()));
+        return ResponseEntity.ok(
+                new LoginResponse(
+                        result.userId(),
+                        result.email(),
+                        result.name(),
+                        result.accessToken(),
+                        null
+                )
+        );
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<JwtResponse> refresh(@CookieValue(name = "refreshToken") String refreshToken) {
-        Jwt jwt = jwtService.parse(refreshToken);
-        if (jwt == null || jwt.isExpired()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+    public ResponseEntity<RefreshResponse> refresh(
+            @CookieValue(name = "refreshToken") String refreshToken,
+            HttpServletResponse response) {
 
-        var user = service.getUserByUserId(jwt.getUserId());
-        var accessToken = jwtService.generateAccessToken(user);
-        return ResponseEntity.ok(new JwtResponse(accessToken.toString()));
+        var result = service.refreshAccessToken(refreshToken);
+
+        response.addCookie(buildRefreshTokenCookie(result.newRefreshToken()));
+
+        return ResponseEntity.ok(
+                new RefreshResponse(
+                        result.email(),
+                        result.newAccessToken(),
+                        null
+                )
+        );
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<UserSummaryResponse> me() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var userId = (Long) authentication.getPrincipal();
-        var user = service.getUserByUserId(userId);
 
-        return ResponseEntity.ok(userMapper.toSummary(user));
-    }
-
-    @PostMapping("/{userId}/change-password")
-    public ResponseEntity<Void> changePassword(
-            @PathVariable Long userId,
-            @RequestBody ChangePasswordRequest request
-    ) {
-        service.changePassword(userId, request);
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletResponse response) {
+        clearRefreshToken(response);
         return ResponseEntity.noContent().build();
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Void> handleBadCredentialsException() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    @PatchMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody ChangePasswordRequest request) {
+
+        service.changePassword(jwt, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    private Cookie buildRefreshTokenCookie(String token) {
+        Cookie cookie = new Cookie("refreshToken", token);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/api/auth/refresh");
+        cookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
+        return cookie;
+    }
+
+    private void clearRefreshToken(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refreshToken", null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/api/auth/refresh");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 }

@@ -1,47 +1,79 @@
 package com.alikh.bookswap.service;
 
-import com.alikh.bookswap.dto.auth.ChangePasswordRequest;
-import com.alikh.bookswap.dto.auth.LoginRequest;
+import com.alikh.bookswap.dto.auth.request.ChangePasswordRequest;
+import com.alikh.bookswap.dto.auth.request.LoginRequest;
+import com.alikh.bookswap.dto.auth.request.RegisterRequest;
+import com.alikh.bookswap.dto.auth.response.LoginResponse;
+import com.alikh.bookswap.dto.auth.response.RefreshResponse;
+import com.alikh.bookswap.dto.auth.response.RegisterResponse;
+import com.alikh.bookswap.dto.user.request.UserChangePasswordRequest;
+import com.alikh.bookswap.dto.user.request.UserCreateRequest;
+import com.alikh.bookswap.dto.user.request.UserLoginRequest;
 import com.alikh.bookswap.entity.AppUser;
-import com.alikh.bookswap.exception.NotFoundException;
-import com.alikh.bookswap.exception.PasswordNotMatch;
-import com.alikh.bookswap.repository.UserRepository;
+import com.alikh.bookswap.exception.UnauthorizedException;
+import com.alikh.bookswap.service.contract.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Collections;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepo;
-    private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
+    private final JwtService jwtService;
 
-    public void changePassword(Long id, ChangePasswordRequest request) {
-        AppUser user = userRepo.findById(id).orElseThrow(() -> new NotFoundException("User", id));
+    public RegisterResponse register(RegisterRequest request) {
+        var user = new UserCreateRequest(
+                request.email(),
+                request.password(),
+                request.name()
+        );
 
-        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
-            throw new PasswordNotMatch();
+        return RegisterResponse.from(userService.create(user));
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        AppUser user = userService.authenticate(UserLoginRequest.from(request));
+
+        var accessToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+
+        return new LoginResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                accessToken.toString(),
+                refreshToken.toString()
+        );
+    }
+
+    public RefreshResponse refreshAccessToken(String token) {
+        var jwt = jwtService.parse(token);
+        if (jwt == null || jwt.isExpired()) {
+            throw new UnauthorizedException();
         }
 
-        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        AppUser user = userService.getEntity(jwt.getUserId());
+
+        Jwt accessToken = jwtService.generateAccessToken(user);
+        Jwt refreshToken = jwtService.generateRefreshToken(user);
+
+        return new RefreshResponse(
+                user.getEmail(),
+                accessToken.toString(),
+                refreshToken.toString()
+        );
     }
 
-    public AppUser getUserByEmail(LoginRequest request) {
-        return userRepo.findByEmail(request.email())
-                .orElseThrow(() -> new NotFoundException("User", request.email()));
-    }
-
-    public AppUser getUserByUserId(Long id) {
-        return userRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("User", id));
+    public void changePassword(Jwt jwt, ChangePasswordRequest request) {
+        userService.changePassword(
+                new UserChangePasswordRequest(
+                        jwt.getUserId(),
+                        request.currentPassword(),
+                        request.newPassword()
+                )
+        );
     }
 }

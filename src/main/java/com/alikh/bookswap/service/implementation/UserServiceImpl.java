@@ -1,8 +1,6 @@
 package com.alikh.bookswap.service.implementation;
 
-import com.alikh.bookswap.dto.user.request.UserCreateRequest;
-import com.alikh.bookswap.dto.user.request.UserPatchRequest;
-import com.alikh.bookswap.dto.user.request.UserUpdateRequest;
+import com.alikh.bookswap.dto.user.request.*;
 import com.alikh.bookswap.dto.user.response.UserDetailResponse;
 import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
 import com.alikh.bookswap.entity.AppUser;
@@ -13,6 +11,7 @@ import com.alikh.bookswap.mapper.UserMapper;
 import com.alikh.bookswap.repository.RoleRepository;
 import com.alikh.bookswap.repository.UserRepository;
 import com.alikh.bookswap.service.contract.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +25,8 @@ import java.util.List;
 @Transactional
 public class UserServiceImpl implements UserService {
 
+    private static final int DEFAULT_ROLE_ID = 2;
+
     private final UserMapper mapper;
     private final UserRepository userRepo;
     private final RoleRepository roleRepo;
@@ -38,12 +39,39 @@ public class UserServiceImpl implements UserService {
             throw new EmailAlreadyExistsException(dto.email());
         }
 
-        Role role = roleRepo.findById(dto.roleId())
-                .orElseThrow(() -> new NotFoundException("Role", dto.roleId()));
+        Role role = roleRepo.findById(DEFAULT_ROLE_ID)
+                .orElseThrow(() -> new NotFoundException("Role", DEFAULT_ROLE_ID));
 
         AppUser entity = mapper.fromCreate(dto, role, passwordEncoder.encode(dto.password()));
         userRepo.save(entity);
         return mapper.toSummary(entity);
+    }
+
+    public AppUser authenticate(UserLoginRequest request) {
+        AppUser user = userRepo.findByEmail(request.email())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        return user;
+    }
+
+    public void changePassword(UserChangePasswordRequest request) {
+        AppUser user = userRepo.findById(request.userId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+    }
+
+    public AppUser getEntity(Long id) {
+        return userRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 
     @Override

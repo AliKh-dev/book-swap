@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         var authentication = new UsernamePasswordAuthenticationToken(
-                jwt.getUserId(),
+                jwt,
                 null,
                 Collections.emptyList()
                 // TODO: implement this
