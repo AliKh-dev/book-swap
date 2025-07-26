@@ -34,24 +34,10 @@ public class RoleServiceImpl implements RoleService {
     public RoleSummaryResponse create(RoleCreateRequest dto) {
         Integer nextId = roleRepo.findTopByOrderByIdDesc()
                 .map(Role::getId).orElse(0) + 1;
-
-        checkCodeDuplication(dto.code());
-
-        Role role = mapper.fromCreate(dto, nextId);
-        roleRepo.save(role);
-        return mapper.toSummary(role);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public RoleDetailResponse get(Integer id, int page) {
-        Role role = roleRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Role", id));
-
-        Page<AppUser> users = userRepo.findByRole(
-                role, PageRequest.of(page, PAGE_SIZE, Sort.by("id").ascending()));
-
-        return mapper.toDetail(role, users.getContent());
+        checkCodeUniquenessOrThrow(dto.code());
+        var entity = mapper.fromCreate(dto, nextId);
+        roleRepo.save(entity);
+        return mapper.toSummary(entity);
     }
 
     @Override
@@ -63,29 +49,45 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public void update(Integer id, RoleUpdateRequest dto) {
-        Role role = roleRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Role", id));
-        checkCodeDuplication(dto.code());
-        mapper.applyUpdate(role, dto);
+    @Transactional(readOnly = true)
+    public RoleDetailResponse get(Integer id, int page) {
+        var role = fetchRoleOrThrow(id);
+
+        Page<AppUser> users = userRepo.findByRole(
+                role, PageRequest.of(page, PAGE_SIZE, Sort.by("id").ascending()));
+
+        return mapper.toDetail(role, users.getContent());
     }
 
     @Override
-    public void patch(Integer id, RolePatchRequest dto) {
-        Role role = roleRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Role", id));
-        if (dto.code() != null) checkCodeDuplication(dto.code());
-        mapper.applyPatch(role, dto);
+    public RoleSummaryResponse update(Integer id, RoleUpdateRequest dto) {
+        var entity = fetchRoleOrThrow(id);
+        checkCodeUniquenessOrThrow(dto.code());
+        mapper.applyUpdate(entity, dto);
+        return mapper.toSummary(entity);
+    }
+
+    @Override
+    public RoleSummaryResponse patch(Integer id, RolePatchRequest dto) {
+        var entity = fetchRoleOrThrow(id);
+        if (dto.code() != null)
+            checkCodeUniquenessOrThrow(dto.code());
+        mapper.applyPatch(entity, dto);
+        return mapper.toSummary(entity);
     }
 
     @Override
     public void delete(Integer id) {
-        if (!roleRepo.existsById(id))
-            throw new NotFoundException("Role", id);
+        fetchRoleOrThrow(id);
         roleRepo.deleteById(id);
     }
 
-    private void checkCodeDuplication(String dto) {
+    private Role fetchRoleOrThrow(Integer id) {
+        return roleRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Role", id));
+    }
+
+    private void checkCodeUniquenessOrThrow(String dto) {
         if (roleRepo.findByCode(dto).isPresent())
             throw new CodeAlreadyExistsException("Role", dto);
     }

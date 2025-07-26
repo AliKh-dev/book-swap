@@ -9,13 +9,13 @@ public interface RoleService {
 
     RoleSummaryResponse create(RoleCreateRequest dto);
 
-    RoleDetailResponse get(Integer id, int page);
-
     List<RoleSummaryResponse> list();
 
-    void update(Integer id, RoleUpdateRequest dto);
+    RoleDetailResponse get(Integer id, int page);
 
-    void patch(Integer id, RolePatchRequest dto);
+    RoleSummaryResponse update(Integer id, RoleUpdateRequest dto);
+
+    RoleSummaryResponse patch(Integer id, RolePatchRequest dto);
 
     void delete(Integer id);
 }

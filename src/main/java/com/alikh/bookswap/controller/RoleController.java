@@ -39,26 +39,25 @@ public class RoleController {
     @GetMapping("/{id}")
     public ResponseEntity<RoleDetailResponse> get(
             @PathVariable Integer id,
-            @RequestParam(defaultValue = "0") Integer page) {
+            @RequestParam(defaultValue = "0") Integer page
+    ) {
         return ResponseEntity.ok(service.get(id, page));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(
+    public ResponseEntity<RoleSummaryResponse> update(
             @PathVariable Integer id,
             @RequestBody @Valid RoleUpdateRequest request
     ) {
-        service.update(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> patch(
+    public ResponseEntity<RoleSummaryResponse> patch(
             @PathVariable Integer id,
             @RequestBody @Valid RolePatchRequest request
     ) {
-        service.patch(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
