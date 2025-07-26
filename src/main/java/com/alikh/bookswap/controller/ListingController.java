@@ -5,10 +5,12 @@ import com.alikh.bookswap.dto.listing.request.ListingPatchRequest;
 import com.alikh.bookswap.dto.listing.request.ListingUpdateRequest;
 import com.alikh.bookswap.dto.listing.response.ListingDetailResponse;
 import com.alikh.bookswap.dto.listing.response.ListingSummaryResponse;
+import com.alikh.bookswap.service.Jwt;
 import com.alikh.bookswap.service.contract.ListingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -25,8 +27,8 @@ public class ListingController {
     @PostMapping
     public ResponseEntity<ListingSummaryResponse> create(
             UriComponentsBuilder uriBuilder,
-            @RequestBody @Valid ListingCreateRequest request) {
-
+            @RequestBody @Valid ListingCreateRequest request
+    ) {
         var response = service.create(request);
         var uri = uriBuilder.path("/api/listings/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
@@ -43,24 +45,38 @@ public class ListingController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(
+    public ResponseEntity<ListingSummaryResponse> update(
             @PathVariable Long id,
-            @RequestBody @Validated ListingUpdateRequest request) {
-        service.update(id, request);
-        return ResponseEntity.noContent().build();
+            @RequestBody @Valid ListingUpdateRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.update(id, request, jwt.getUserId()));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> patch(
+    public ResponseEntity<ListingSummaryResponse> patch(
             @PathVariable Long id,
-            @RequestBody ListingPatchRequest request) {
-        service.patch(id, request);
-        return ResponseEntity.noContent().build();
+            @RequestBody ListingPatchRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.patch(id, request, jwt.getUserId()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> softDelete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        service.softDelete(id, jwt.getUserId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/hard-delete/{id}")
+    public ResponseEntity<Void> hardDelete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        service.hardDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

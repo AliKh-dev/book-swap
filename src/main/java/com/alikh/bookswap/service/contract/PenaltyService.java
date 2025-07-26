@@ -9,13 +9,15 @@ public interface PenaltyService {
 
     PenaltySummaryResponse create(PenaltyCreateRequest dto);
 
-    PenaltyDetailResponse get(Long id);
-
     List<PenaltySummaryResponse> list();
 
-    void update(Long id, PenaltyUpdateRequest dto);
+    PenaltyDetailResponse get(Long id);
 
-    void patch(Long id, PenaltyPatchRequest dto);
+    PenaltySummaryResponse update(Long id, PenaltyUpdateRequest dto, Long currentUserId);
 
-    void delete(Long id);
+    PenaltySummaryResponse patch(Long id, PenaltyPatchRequest dto, Long currentUserId);
+
+    void softDelete(Long id, Long currentUserId);
+
+    void hardDelete(Long id, Long currentUserId);
 }

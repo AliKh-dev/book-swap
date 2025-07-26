@@ -9,13 +9,15 @@ public interface ListingService {
 
     ListingSummaryResponse create(ListingCreateRequest dto);
 
-    ListingDetailResponse get(Long id);
-
     List<ListingSummaryResponse> list();
 
-    void update(Long id, ListingUpdateRequest dto);
+    ListingDetailResponse get(Long id);
 
-    void patch(Long id, ListingPatchRequest dto);
+    ListingSummaryResponse update(Long id, ListingUpdateRequest dto, Long currentUserId);
 
-    void delete(Long id);
+    ListingSummaryResponse patch(Long id, ListingPatchRequest dto, Long currentUserId);
+
+    void softDelete(Long id, Long currentUserId);
+
+    void hardDelete(Long id, Long currentUserId);
 }

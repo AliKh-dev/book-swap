@@ -5,9 +5,6 @@ import jakarta.validation.constraints.NotNull;
 public record BorrowRequestCreateRequest(
         @NotNull
         Long listingId,
-
-        @NotNull
-        Long borrowerId,
         Integer statusId
 ) {
 

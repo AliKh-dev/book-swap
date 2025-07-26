@@ -28,11 +28,10 @@ public class BookController {
     public ResponseEntity<BookSummaryResponse> create(
             UriComponentsBuilder uriBuilder,
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody @Valid BookCreateRequest dto) {
-
+            @RequestBody @Valid BookCreateRequest dto
+    ) {
         var response = service.create(dto, jwt.getUserId());
         var uri = uriBuilder.path("api/books/{id}").buildAndExpand(response.id()).toUri();
-
         return ResponseEntity.created(uri).body(response);
     }
 
@@ -50,8 +49,8 @@ public class BookController {
     public ResponseEntity<BookSummaryResponse> update(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody @Valid BookUpdateRequest dto) {
-
+            @RequestBody @Valid BookUpdateRequest dto
+    ) {
         return ResponseEntity.ok(service.update(id, dto, jwt.getUserId()));
     }
 
@@ -59,15 +58,16 @@ public class BookController {
     public ResponseEntity<BookSummaryResponse> patch(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody @Valid BookPatchRequest dto) {
-
+            @RequestBody @Valid BookPatchRequest dto
+    ) {
         return ResponseEntity.ok(service.patch(id, dto, jwt.getUserId()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> softDelete(
             @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt
+    ) {
         service.softDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
@@ -75,7 +75,8 @@ public class BookController {
     @DeleteMapping("/hard-delete/{id}")
     public ResponseEntity<Void> hardDelete(
             @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt
+    ) {
         service.hardDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }

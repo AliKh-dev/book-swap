@@ -3,6 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.penalty.request.*;
 import com.alikh.bookswap.dto.penalty.response.*;
 import com.alikh.bookswap.entity.*;
+import com.alikh.bookswap.exception.AccessDeniedException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.PenaltyMapper;
 import com.alikh.bookswap.repository.*;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -27,74 +29,104 @@ public class PenaltyServiceImpl implements PenaltyService {
 
     @Override
     public PenaltySummaryResponse create(PenaltyCreateRequest dto) {
+        var request = fetchActiveRequestOrThrow(dto.requestId());
+        var type = fetchPenaltyTypeOrThrow(dto.typeId());
 
-        BorrowRequest req = requestRepo.findById(dto.requestId())
-                .orElseThrow(() -> new NotFoundException("BorrowRequest", dto.requestId()));
-
-        PenaltyType type = typeRepo.findById(dto.typeId())
-                .orElseThrow(() -> new NotFoundException("PenaltyType", dto.typeId()));
-
-        Penalty entity = mapper.fromCreate(dto, req, type);
+        var entity = mapper.fromCreate(dto, request, type);
         repo.save(entity);
         return mapper.toSummary(entity);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PenaltyDetailResponse get(Long id) {
-        Penalty p = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Penalty", id));
-        return mapper.toDetail(p);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<PenaltySummaryResponse> list() {
-        return repo.findAll().stream()
+        return repo.findByIsDeletedFalse().stream()
                 .map(mapper::toSummary)
                 .toList();
     }
 
     @Override
-    public void update(Long id, PenaltyUpdateRequest dto) {
-
-        Penalty p = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Penalty", id));
-
-        PenaltyType type = typeRepo.findById(dto.typeId())
-                .orElseThrow(() -> new NotFoundException("PenaltyType", dto.typeId()));
-
-        AppUser resolver = userRepo.findById(dto.resolvedById())
-                .orElseThrow(() -> new NotFoundException("User", dto.resolvedById()));
-
-        mapper.applyUpdate(p, dto, type, resolver);
+    @Transactional(readOnly = true)
+    public PenaltyDetailResponse get(Long id) {
+        return mapper.toDetail(fetchActivePenaltyOrThrow(id));
     }
 
     @Override
-    public void patch(Long id, PenaltyPatchRequest dto) {
+    public PenaltySummaryResponse update(
+            Long id,
+            PenaltyUpdateRequest dto,
+            Long currentUserId
+    ) {
+        var entity = fetchActivePenaltyOrThrow(id);
+        var type = fetchPenaltyTypeOrThrow(dto.typeId());
+        var resolver = fetchActiveUserOrThrow(currentUserId);
 
-        Penalty penalty = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Penalty", id));
+        mapper.applyUpdate(entity, dto, type, resolver);
+        return mapper.toSummary(entity);
+    }
 
-        PenaltyType type = penalty.getType();
+    @Override
+    public PenaltySummaryResponse patch(
+            Long id,
+            PenaltyPatchRequest dto,
+            Long currentUserId
+    ) {
+        var entity = fetchActivePenaltyOrThrow(id);
+
+        PenaltyType type = null;
         if (dto.typeId() != null) {
-            type = typeRepo.findById(dto.typeId())
-                    .orElseThrow(() -> new NotFoundException("PenaltyType", dto.typeId()));
+            type = fetchPenaltyTypeOrThrow(dto.typeId());
         }
 
-        AppUser resolver = penalty.getResolvedBy();
+        AppUser resolver = null;
         if (dto.resolvedById() != null) {
-            resolver = userRepo.findById(dto.resolvedById())
-                    .orElseThrow(() -> new NotFoundException("User", dto.resolvedById()));
+            resolver = fetchActiveUserOrThrow(dto.resolvedById());
         }
 
-        mapper.applyPatch(penalty, dto, type, resolver);
+        mapper.applyPatch(entity, dto, type, resolver);
+        return mapper.toSummary(entity);
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id))
-            throw new NotFoundException("Penalty", id);
+    public void softDelete(Long id, Long currentUserId) {
+        var entity = fetchActivePenaltyOrThrow(id);
+        checkDeletePermission(currentUserId);
+
+        entity.setDeletedBy(fetchActiveUserOrThrow(currentUserId).getEmail());
+        entity.setDeletedAt(LocalDateTime.now());
+        entity.setIsDeleted(true);
+    }
+
+    @Override
+    public void hardDelete(Long id, Long currentUserId) {
+        fetchActivePenaltyOrThrow(id);
+        checkDeletePermission(currentUserId);
         repo.deleteById(id);
+    }
+
+    private BorrowRequest fetchActiveRequestOrThrow(Long requestId) {
+        return requestRepo.findByIdAndIsDeletedFalse(requestId)
+                .orElseThrow(() -> new NotFoundException("BorrowRequest", requestId));
+    }
+
+    private PenaltyType fetchPenaltyTypeOrThrow(Integer typeId) {
+        return typeRepo.findById(typeId)
+                .orElseThrow(() -> new NotFoundException("PenaltyType", typeId));
+    }
+
+    private Penalty fetchActivePenaltyOrThrow(Long id) {
+        return repo.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Penalty", id));
+    }
+
+    private AppUser fetchActiveUserOrThrow(Long userId) {
+        return userRepo.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User", userId));
+    }
+
+    private void checkDeletePermission(Long currentUserId) {
+        if (!fetchActiveUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN"))
+            throw new AccessDeniedException("You don't have enough authorities to delete this user");
+
     }
 }

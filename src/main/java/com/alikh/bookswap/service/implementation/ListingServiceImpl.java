@@ -3,6 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.listing.request.*;
 import com.alikh.bookswap.dto.listing.response.*;
 import com.alikh.bookswap.entity.*;
+import com.alikh.bookswap.exception.AccessDeniedException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.ListingMapper;
 import com.alikh.bookswap.repository.*;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,17 +23,14 @@ public class ListingServiceImpl implements ListingService {
 
     private final ListingRepository repo;
     private final BookRepository bookRepo;
+    private final UserRepository userRepo;
     private final ListingTypeRepository typeRepo;
     private final ListingMapper mapper;
 
     @Override
     public ListingSummaryResponse create(ListingCreateRequest dto) {
-
-        Book book = bookRepo.findById(dto.bookId())
-                .orElseThrow(() -> new NotFoundException("Book", dto.bookId()));
-
-        ListingType type = typeRepo.findById(dto.typeId())
-                .orElseThrow(() -> new NotFoundException("ListingType", dto.typeId()));
+        Book book = fetchBookOrThrow(dto.bookId());
+        ListingType type = fetchTypeOrThrow(dto.typeId());
 
         Listing entity = mapper.fromCreate(dto, book, type);
         repo.save(entity);
@@ -40,51 +39,89 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional(readOnly = true)
-    public ListingDetailResponse get(Long id) {
-        Listing listing = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Listing", id));
-        return mapper.toDetail(listing);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<ListingSummaryResponse> list() {
-        return repo.findAll().stream()
+        return repo.findByIsDeletedFalse().stream()
                 .map(mapper::toSummary)
                 .toList();
     }
 
     @Override
-    public void update(Long id, ListingUpdateRequest dto) {
-
-        Listing listing = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Listing", id));
-
-        ListingType type = typeRepo.findById(dto.typeId())
-                .orElseThrow(() -> new NotFoundException("ListingType", dto.typeId()));
-
-        mapper.applyUpdate(listing, dto, type);   // uses dirty-checking
+    @Transactional(readOnly = true)
+    public ListingDetailResponse get(Long id) {
+        return mapper.toDetail(fetchActiveListing(id));
     }
 
     @Override
-    public void patch(Long id, ListingPatchRequest dto) {
+    public ListingSummaryResponse update(Long id, ListingUpdateRequest dto, Long currentUserId) {
+        var entity = fetchActiveListing(id);
+        checkBookOwnerOrThrow(currentUserId, entity.getBook());
 
-        Listing listing = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Listing", id));
+        ListingType type = fetchTypeOrThrow(dto.typeId());
 
-        ListingType type = listing.getType();
-        if (dto.typeId() != null) {
-            type = typeRepo.findById(dto.typeId())
-                    .orElseThrow(() -> new NotFoundException("ListingType", dto.typeId()));
-        }
-
-        mapper.applyPatch(listing, dto, type);
+        mapper.applyUpdate(entity, dto, type);
+        return mapper.toSummary(entity);
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id))
-            throw new NotFoundException("Listing", id);
+    public ListingSummaryResponse patch(Long id, ListingPatchRequest dto, Long currentUserId) {
+        var entity = fetchActiveListing(id);
+        checkBookOwnerOrThrow(currentUserId, entity.getBook());
+
+        ListingType type = null;
+        if (dto.typeId() != null)
+            type = fetchTypeOrThrow(dto.typeId());
+
+        mapper.applyPatch(entity, dto, type);
+        return mapper.toSummary(entity);
+    }
+
+    @Override
+    public void softDelete(Long id, Long currentUserId) {
+        var entity = fetchActiveListing(id);
+        checkBookOwnerOrThrow(currentUserId, entity.getBook());
+
+        entity.setDeletedBy(fetchUserOrThrow(currentUserId).getEmail());
+        entity.setDeletedAt(LocalDateTime.now());
+        entity.setIsDeleted(true);
+    }
+
+    @Override
+    public void hardDelete(Long id, Long currentUserId) {
+        var entity = repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Listing", id));
+        checkDeletePermission(entity.getBook().getOwner().getId(), currentUserId);
         repo.deleteById(id);
+    }
+
+    private Book fetchBookOrThrow(Long bookId) {
+        return bookRepo.findById(bookId)
+                .orElseThrow(() -> new NotFoundException("Book", bookId));
+    }
+
+    private ListingType fetchTypeOrThrow(Integer typeId) {
+        return typeRepo.findById(typeId)
+                .orElseThrow(() -> new NotFoundException("ListingType", typeId));
+    }
+
+    private Listing fetchActiveListing(Long id) {
+        return repo.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Listing", id));
+    }
+
+    private AppUser fetchUserOrThrow(Long ownerId) {
+        return userRepo.findById(ownerId)
+                .orElseThrow(() -> new NotFoundException("User", ownerId));
+    }
+
+    private void checkBookOwnerOrThrow(Long currentUserId, Book book) {
+        if (!book.getOwner().getId().equals(currentUserId)) {
+            throw new AccessDeniedException("This book does not belong to you.");
+        }
+    }
+
+    private void checkDeletePermission(Long ownerId, Long currentUserId) {
+        if (!fetchUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN") && !ownerId.equals(currentUserId))
+            throw new AccessDeniedException("You don't have enough authorities to delete this user");
+
     }
 }

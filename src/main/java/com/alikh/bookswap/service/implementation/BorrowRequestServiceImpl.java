@@ -6,6 +6,7 @@ import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.entity.BorrowRequest;
 import com.alikh.bookswap.entity.Listing;
 import com.alikh.bookswap.entity.RequestStatus;
+import com.alikh.bookswap.exception.AccessDeniedException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.BorrowRequestMapper;
 import com.alikh.bookswap.repository.BorrowRequestRepository;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,69 +33,110 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
     private final BorrowRequestMapper mapper;
 
     @Override
-    public BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto) {
+    public BorrowRequestSummaryResponse create(
+            BorrowRequestCreateRequest dto,
+            Long borrowerId
+    ) {
+        Listing listing = fetchActiveListingOrThrow(dto.listingId());
+        AppUser borrower = fetchActiveUserOrThrow(borrowerId);
+        RequestStatus initStatus = fetchStatusOrThrow(dto.statusId());
 
-        Listing listing = listingRepo.findById(dto.listingId())
-                .orElseThrow(() -> new NotFoundException("Listing", dto.listingId()));
-
-        AppUser borrower = userRepo.findById(dto.borrowerId())
-                .orElseThrow(() -> new NotFoundException("User", dto.borrowerId()));
-
-        RequestStatus initStatus = statusRepo.findById(dto.statusId())
-                .orElseThrow(() -> new NotFoundException("RequestStatus", dto.statusId()));
-
-        BorrowRequest entity = mapper.fromCreate(dto, null, listing, borrower, initStatus);
+        var entity = mapper.fromCreate(dto, listing, borrower, initStatus);
         repo.save(entity);
         return mapper.toSummary(entity);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public BorrowRequestDetailResponse get(Long id) {
-        BorrowRequest req = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BorrowRequest", id));
-        return mapper.toDetail(req);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<BorrowRequestSummaryResponse> list() {
-        return repo.findAll().stream()
+        return repo.findByIsDeletedFalse().stream()
                 .map(mapper::toSummary)
                 .toList();
     }
 
     @Override
-    public void update(Long id, BorrowRequestUpdateRequest dto) {
-
-        BorrowRequest req = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BorrowRequest", id));
-
-        RequestStatus status = statusRepo.findById(dto.statusId())
-                .orElseThrow(() -> new NotFoundException("RequestStatus", dto.statusId()));
-
-        mapper.applyUpdate(req, dto, status);
+    @Transactional(readOnly = true)
+    public BorrowRequestDetailResponse get(Long id) {
+        return mapper.toDetail(fetchBorrowRequestOrThrow(id));
     }
 
     @Override
-    public void patch(Long id, BorrowRequestPatchRequest dto) {
+    public BorrowRequestSummaryResponse update(
+            Long id,
+            BorrowRequestUpdateRequest dto
+    ) {
+        var entity = fetchBorrowRequestOrThrow(id);
+        var status = fetchStatusOrThrow(dto.statusId());
 
-        BorrowRequest br = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BorrowRequest", id));
+        mapper.applyUpdate(entity, dto, status);
+        return mapper.toSummary(entity);
+    }
+
+    @Override
+    public BorrowRequestSummaryResponse patch(
+            Long id,
+            BorrowRequestPatchRequest dto
+    ) {
+        var entity = fetchBorrowRequestOrThrow(id);
 
         RequestStatus status = null;
-        if (dto.statusId() != null) {
-            status = statusRepo.findById(dto.statusId())
-                    .orElseThrow(() -> new NotFoundException("RequestStatus", dto.statusId()));
-        }
+        if (dto.statusId() != null)
+            status = fetchStatusOrThrow(dto.statusId());
 
-        mapper.applyPatch(br, dto, status);
+        mapper.applyPatch(entity, dto, status);
+        return mapper.toSummary(entity);
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id))
-            throw new NotFoundException("BorrowRequest", id);
+    public void softDelete(Long id, Long currentUserId) {
+        var entity = fetchBorrowRequestOrThrow(id);
+        Long borrowerId = entity.getBorrower().getId();
+
+        checkRequestOwnerOrThrow(currentUserId, borrowerId);
+        checkDeletePermission(currentUserId, borrowerId);
+
+        entity.setDeletedBy(fetchActiveUserOrThrow(currentUserId).getEmail());
+        entity.setDeletedAt(LocalDateTime.now());
+        entity.setIsDeleted(true);
+    }
+
+    @Override
+    public void hardDelete(Long id, Long currentUserId) {
+        var entity = fetchBorrowRequestOrThrow(id);
+        checkDeletePermission(currentUserId, entity.getBorrower().getId());
         repo.deleteById(id);
     }
+
+    private BorrowRequest fetchBorrowRequestOrThrow(Long id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("BorrowRequest", id));
+    }
+
+    private RequestStatus fetchStatusOrThrow(Integer dto) {
+        return statusRepo.findById(dto)
+                .orElseThrow(() -> new NotFoundException("RequestStatus", dto));
+    }
+
+    private AppUser fetchActiveUserOrThrow(Long borrowerId) {
+        return userRepo.findByIdAndIsDeletedFalse(borrowerId)
+                .orElseThrow(() -> new NotFoundException("User", borrowerId));
+    }
+
+    private Listing fetchActiveListingOrThrow(Long listingId) {
+        return listingRepo.findByIdAndIsDeletedFalse(listingId)
+                .orElseThrow(() -> new NotFoundException("Listing", listingId));
+    }
+
+    private void checkRequestOwnerOrThrow(Long currentUserId, Long borrowerId) {
+        if (!borrowerId.equals(currentUserId))
+            throw new AccessDeniedException("This request dose not belong to you.");
+    }
+
+    private void checkDeletePermission(Long currentUserId, Long borrowerId) {
+        if (!fetchActiveUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN") && !borrowerId.equals(currentUserId))
+            throw new AccessDeniedException("You don't have enough authorities to delete this user");
+
+    }
+
+
 }

@@ -40,13 +40,11 @@ public class BorrowRequestMapper {
     /* ---------- Create / Update requests -> Entity ---------- */
 
     public BorrowRequest fromCreate(BorrowRequestCreateRequest request,
-                                    Long requestId,
                                     Listing listing,
                                     AppUser borrower,
                                     RequestStatus initStatus) {
 
         return BorrowRequest.builder()
-                .id(requestId)
                 .listing(listing)
                 .borrower(borrower)
                 .status(initStatus)

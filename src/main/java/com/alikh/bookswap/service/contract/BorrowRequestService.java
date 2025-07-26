@@ -7,15 +7,17 @@ import java.util.List;
 
 public interface BorrowRequestService {
 
-    BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto);
-
-    BorrowRequestDetailResponse get(Long id);
+    BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto, Long borrowerId);
 
     List<BorrowRequestSummaryResponse> list();
 
-    void update(Long id, BorrowRequestUpdateRequest dto);
+    BorrowRequestDetailResponse get(Long id);
 
-    void patch(Long id, BorrowRequestPatchRequest dto);
+    BorrowRequestSummaryResponse update(Long id, BorrowRequestUpdateRequest dto);
 
-    void delete(Long id);
+    BorrowRequestSummaryResponse patch(Long id, BorrowRequestPatchRequest dto);
+
+    void softDelete(Long id, Long currentUserId);
+
+    void hardDelete(Long id, Long currentUserId);
 }
