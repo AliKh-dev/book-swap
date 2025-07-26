@@ -5,13 +5,7 @@ import com.alikh.bookswap.dto.requeststatus.request.RequestStatusPatchRequest;
 import com.alikh.bookswap.dto.requeststatus.request.RequestStatusUpdateRequest;
 import com.alikh.bookswap.dto.requeststatus.response.RequestStatusDetailResponse;
 import com.alikh.bookswap.dto.requeststatus.response.RequestStatusSummaryResponse;
-import com.alikh.bookswap.dto.role.request.RoleCreateRequest;
-import com.alikh.bookswap.dto.role.request.RolePatchRequest;
-import com.alikh.bookswap.dto.role.request.RoleUpdateRequest;
-import com.alikh.bookswap.dto.role.response.RoleDetailResponse;
-import com.alikh.bookswap.dto.role.response.RoleSummaryResponse;
 import com.alikh.bookswap.service.contract.RequestStatusService;
-import com.alikh.bookswap.service.contract.RoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -48,21 +42,19 @@ public class RequestStatusController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(
+    public ResponseEntity<RequestStatusSummaryResponse> update(
             @PathVariable Integer id,
             @RequestBody @Valid RequestStatusUpdateRequest request
     ) {
-        service.update(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> patch(
+    public ResponseEntity<RequestStatusSummaryResponse> patch(
             @PathVariable Integer id,
             @RequestBody @Valid RequestStatusPatchRequest request
     ) {
-        service.patch(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
