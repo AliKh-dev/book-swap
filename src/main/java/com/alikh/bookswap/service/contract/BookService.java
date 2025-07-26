@@ -7,15 +7,17 @@ import java.util.List;
 
 public interface BookService {
 
-    BookSummaryResponse create(BookCreateRequest dto);
-
-    BookDetailResponse get(Long id);
+    BookSummaryResponse create(BookCreateRequest dto, Long ownerId);
 
     List<BookSummaryResponse> list();
 
-    void update(Long id, BookUpdateRequest dto);
+    BookDetailResponse get(Long id);
 
-    void patch(Long id, BookPatchRequest dto);
+    BookSummaryResponse update(Long id, BookUpdateRequest dto, Long currentUserId);
 
-    void delete(Long id);
+    BookSummaryResponse patch(Long id, BookPatchRequest dto, Long currentUserId);
+
+    void softDelete(Long id, Long currentUserId);
+
+    void hardDelete(Long id, Long currentUserId);
 }

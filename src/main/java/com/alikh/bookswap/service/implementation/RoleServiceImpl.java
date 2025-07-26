@@ -4,7 +4,7 @@ import com.alikh.bookswap.dto.role.request.*;
 import com.alikh.bookswap.dto.role.response.*;
 import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.entity.Role;
-import com.alikh.bookswap.exception.CodeAlreadyExists;
+import com.alikh.bookswap.exception.CodeAlreadyExistsException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.RoleMapper;
 import com.alikh.bookswap.repository.UserRepository;
@@ -87,6 +87,6 @@ public class RoleServiceImpl implements RoleService {
 
     private void checkCodeDuplication(String dto) {
         if (roleRepo.findByCode(dto).isPresent())
-            throw new CodeAlreadyExists("Role", dto);
+            throw new CodeAlreadyExistsException("Role", dto);
     }
 }

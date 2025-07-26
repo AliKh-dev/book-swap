@@ -3,7 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.listingtype.request.*;
 import com.alikh.bookswap.dto.listingtype.response.*;
 import com.alikh.bookswap.entity.ListingType;
-import com.alikh.bookswap.exception.CodeAlreadyExists;
+import com.alikh.bookswap.exception.CodeAlreadyExistsException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.ListingTypeMapper;
 import com.alikh.bookswap.repository.ListingTypeRepository;
@@ -73,6 +73,6 @@ public class ListingTypeServiceImpl implements ListingTypeService {
 
     private void checkCodeDuplication(String code) {
         if (repo.existsByCode(code))
-            throw new CodeAlreadyExists("ListingType", code);
+            throw new CodeAlreadyExistsException("ListingType", code);
     }
 }

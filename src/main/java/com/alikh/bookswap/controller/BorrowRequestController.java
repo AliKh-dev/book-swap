@@ -33,11 +33,9 @@ public class BorrowRequestController {
             UriComponentsBuilder uriBuilder,
             @RequestBody @Valid BorrowRequestCreateRequest request) {
 
-        // TODO: I should take borrowerId from jwt token
-//        var response = service.create(request, );
-//        var uri = uriBuilder.path("/api/book-conditions/{id}").buildAndExpand(response.id()).toUri();
-//        return ResponseEntity.created(uri).body(response);
-        return ResponseEntity.notFound().build();
+        var response = service.create(request);
+        var uri = uriBuilder.path("/api/borrow-requests/{id}").buildAndExpand(response.id()).toUri();
+        return ResponseEntity.created(uri).body(response);
     }
 
     @GetMapping

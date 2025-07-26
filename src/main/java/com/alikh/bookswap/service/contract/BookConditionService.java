@@ -8,13 +8,13 @@ import java.util.List;
 public interface BookConditionService {
     BookConditionSummaryResponse create(BookConditionCreateRequest dto);
 
+    List<BookConditionSummaryResponse> list();
+
     BookConditionDetailResponse get(Integer id);
 
-    void update(Integer id, BookConditionUpdateRequest dto);
+    BookConditionSummaryResponse update(Integer id, BookConditionUpdateRequest dto);
 
-    void patch(Integer id, BookConditionPatchRequest dto);
+    BookConditionSummaryResponse patch(Integer id, BookConditionPatchRequest dto);
 
     void delete(Integer id);
-
-    List<BookConditionSummaryResponse> list();
 }

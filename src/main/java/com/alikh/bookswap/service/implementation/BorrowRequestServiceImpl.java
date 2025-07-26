@@ -31,13 +31,13 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
     private final BorrowRequestMapper mapper;
 
     @Override
-    public BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto, Long borrowerId) {
+    public BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto) {
 
         Listing listing = listingRepo.findById(dto.listingId())
                 .orElseThrow(() -> new NotFoundException("Listing", dto.listingId()));
 
-        AppUser borrower = userRepo.findById(borrowerId)
-                .orElseThrow(() -> new NotFoundException("User", borrowerId));
+        AppUser borrower = userRepo.findById(dto.borrowerId())
+                .orElseThrow(() -> new NotFoundException("User", dto.borrowerId()));
 
         RequestStatus initStatus = statusRepo.findById(dto.statusId())
                 .orElseThrow(() -> new NotFoundException("RequestStatus", dto.statusId()));

@@ -122,8 +122,7 @@ CREATE TABLE book
 		FOREIGN KEY (owner_id) REFERENCES app_user (id)
 			ON DELETE CASCADE,
 	CONSTRAINT fk_book__condition
-		FOREIGN KEY (condition_id) REFERENCES book_condition (id),
-	CONSTRAINT ux_book_isbn UNIQUE (isbn)
+		FOREIGN KEY (condition_id) REFERENCES book_condition (id)
 );
 
 CREATE TABLE listing

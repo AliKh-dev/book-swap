@@ -3,7 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.penaltytype.request.*;
 import com.alikh.bookswap.dto.penaltytype.response.*;
 import com.alikh.bookswap.entity.PenaltyType;
-import com.alikh.bookswap.exception.CodeAlreadyExists;
+import com.alikh.bookswap.exception.CodeAlreadyExistsException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.PenaltyTypeMapper;
 import com.alikh.bookswap.repository.PenaltyTypeRepository;
@@ -73,6 +73,6 @@ public class PenaltyTypeServiceImpl implements PenaltyTypeService {
 
     private void checkCodeDuplication(String dto) {
         if (repo.existsByCode(dto))
-            throw new CodeAlreadyExists("Role", dto);
+            throw new CodeAlreadyExistsException("Role", dto);
     }
 }

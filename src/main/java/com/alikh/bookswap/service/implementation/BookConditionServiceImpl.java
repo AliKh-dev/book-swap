@@ -3,7 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.bookcondition.request.*;
 import com.alikh.bookswap.dto.bookcondition.response.*;
 import com.alikh.bookswap.entity.BookCondition;
-import com.alikh.bookswap.exception.CodeAlreadyExists;
+import com.alikh.bookswap.exception.CodeAlreadyExistsException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.BookConditionMapper;
 import com.alikh.bookswap.repository.BookConditionRepository;
@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
 
 @Service
 @RequiredArgsConstructor
@@ -28,40 +27,10 @@ public class BookConditionServiceImpl implements BookConditionService {
         Integer nextId = repo.findTopByOrderByIdDesc()
                 .map(BookCondition::getId)
                 .orElse(0) + 1;
-        checkCodeDuplication(dto.code());
+        checkCodeUniquenessOrThrow(dto.code());
         BookCondition entity = mapper.fromCreate(dto, nextId);
         repo.save(entity);
         return mapper.toSummary(entity);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public BookConditionDetailResponse get(Integer id) {
-        return mapper.toDetail(repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BookCondition", id)));
-    }
-
-    @Override
-    public void update(Integer id, BookConditionUpdateRequest dto) {
-        BookCondition entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BookCondition", id));
-        checkCodeDuplication(dto.code());
-        mapper.applyUpdate(entity, dto);
-    }
-
-    @Override
-    public void patch(Integer id, BookConditionPatchRequest dto) {
-        BookCondition entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BookCondition", id));
-        if (dto.code() != null)
-            checkCodeDuplication(dto.code());
-        mapper.applyPatch(entity, dto);
-    }
-
-    @Override
-    public void delete(Integer id) {
-        if (!repo.existsById(id)) throw new NotFoundException("BookCondition", id);
-        repo.deleteById(id);
     }
 
     @Override
@@ -72,8 +41,42 @@ public class BookConditionServiceImpl implements BookConditionService {
                 .toList();
     }
 
-    private void checkCodeDuplication(String code) {
+    @Override
+    @Transactional(readOnly = true)
+    public BookConditionDetailResponse get(Integer id) {
+        return mapper.toDetail(fetchBookConditionOrThrow(id));
+    }
+
+    @Override
+    public BookConditionSummaryResponse update(Integer id, BookConditionUpdateRequest dto) {
+        BookCondition entity = fetchBookConditionOrThrow(id);
+        checkCodeUniquenessOrThrow(dto.code());
+        mapper.applyUpdate(entity, dto);
+        return mapper.toSummary(entity);
+    }
+
+    @Override
+    public BookConditionSummaryResponse patch(Integer id, BookConditionPatchRequest dto) {
+        BookCondition entity = fetchBookConditionOrThrow(id);
+        if (dto.code() != null)
+            checkCodeUniquenessOrThrow(dto.code());
+        mapper.applyPatch(entity, dto);
+        return mapper.toSummary(entity);
+    }
+
+    @Override
+    public void delete(Integer id) {
+        var entity = fetchBookConditionOrThrow(id);
+        repo.deleteById(entity.getId());
+    }
+
+    private BookCondition fetchBookConditionOrThrow(Integer id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new NotFoundException("BookCondition", id));
+    }
+
+    private void checkCodeUniquenessOrThrow(String code) {
         if (repo.existsByCode(code))
-            throw new CodeAlreadyExists("BookCondition", code);
+            throw new CodeAlreadyExistsException("BookCondition", code);
     }
 }

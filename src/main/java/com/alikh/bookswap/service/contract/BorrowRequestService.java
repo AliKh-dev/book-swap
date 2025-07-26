@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface BorrowRequestService {
 
-    BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto, Long borrowerId);
+    BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto);
 
     BorrowRequestDetailResponse get(Long id);
 

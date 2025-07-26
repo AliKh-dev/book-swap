@@ -5,11 +5,12 @@ import com.alikh.bookswap.dto.bookcondition.request.BookConditionPatchRequest;
 import com.alikh.bookswap.dto.bookcondition.request.BookConditionUpdateRequest;
 import com.alikh.bookswap.dto.bookcondition.response.BookConditionDetailResponse;
 import com.alikh.bookswap.dto.bookcondition.response.BookConditionSummaryResponse;
+import com.alikh.bookswap.exception.CodeAlreadyExistsException;
 import com.alikh.bookswap.service.contract.BookConditionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -28,34 +29,33 @@ public class BookConditionController {
             @RequestBody @Valid BookConditionCreateRequest request) {
 
         var response = service.create(request);
-        var uri = uriBuilder.path("/api/book-conditions/{id}").buildAndExpand(response.id()).toUri();
+        var uri = uriBuilder.path("/book-conditions/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
     }
 
     @GetMapping
-    public List<BookConditionSummaryResponse> list() {
-        return service.list();
+    public ResponseEntity<List<BookConditionSummaryResponse>> list() {
+        return ResponseEntity.ok(service.list());
     }
 
     @GetMapping("/{id}")
-    public BookConditionDetailResponse get(@PathVariable Integer id) {
-        return service.get(id);
+    public ResponseEntity<BookConditionDetailResponse> get(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.get(id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(
+    public ResponseEntity<BookConditionSummaryResponse> update(
             @PathVariable Integer id,
-            @RequestBody @Validated BookConditionUpdateRequest request) {
-        service.update(id, request);
-        return ResponseEntity.noContent().build();
+            @RequestBody @Valid BookConditionUpdateRequest request) {
+
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> patch(
+    public ResponseEntity<BookConditionSummaryResponse> patch(
             @PathVariable Integer id,
             @RequestBody BookConditionPatchRequest request) {
-        service.patch(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -63,4 +63,17 @@ public class BookConditionController {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @ExceptionHandler(CodeAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateCode(CodeAlreadyExistsException ex) {
+        var body = new ErrorResponse(
+                "CONFLICT",
+                ex.getMessage()
+        );
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(body);
+    }
+
+    public record ErrorResponse(String error, String message) {}
 }

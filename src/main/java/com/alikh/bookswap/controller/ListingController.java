@@ -1,16 +1,10 @@
 package com.alikh.bookswap.controller;
 
-import com.alikh.bookswap.dto.borrowrequest.request.BorrowRequestCreateRequest;
-import com.alikh.bookswap.dto.borrowrequest.request.BorrowRequestPatchRequest;
-import com.alikh.bookswap.dto.borrowrequest.request.BorrowRequestUpdateRequest;
-import com.alikh.bookswap.dto.borrowrequest.response.BorrowRequestDetailResponse;
-import com.alikh.bookswap.dto.borrowrequest.response.BorrowRequestSummaryResponse;
 import com.alikh.bookswap.dto.listing.request.ListingCreateRequest;
 import com.alikh.bookswap.dto.listing.request.ListingPatchRequest;
 import com.alikh.bookswap.dto.listing.request.ListingUpdateRequest;
 import com.alikh.bookswap.dto.listing.response.ListingDetailResponse;
 import com.alikh.bookswap.dto.listing.response.ListingSummaryResponse;
-import com.alikh.bookswap.service.contract.BorrowRequestService;
 import com.alikh.bookswap.service.contract.ListingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

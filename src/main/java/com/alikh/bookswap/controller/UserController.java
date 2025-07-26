@@ -57,7 +57,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> softDelete(@PathVariable Long id) {
         // TODO: probably should be change logic of getting name from SecurityContextHolder
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
         service.softDelete(id, username);
