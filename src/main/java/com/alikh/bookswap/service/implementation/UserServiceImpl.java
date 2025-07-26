@@ -5,8 +5,10 @@ import com.alikh.bookswap.dto.user.response.UserDetailResponse;
 import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
 import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.entity.Role;
+import com.alikh.bookswap.exception.AccessDeniedException;
 import com.alikh.bookswap.exception.EmailAlreadyExistsException;
 import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.UnauthorizedException;
 import com.alikh.bookswap.mapper.UserMapper;
 import com.alikh.bookswap.repository.RoleRepository;
 import com.alikh.bookswap.repository.UserRepository;
@@ -34,118 +36,116 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserSummaryResponse create(UserCreateRequest dto) {
-        boolean existence = userRepo.existsByEmail(dto.email());
-        if (existence) {
-            throw new EmailAlreadyExistsException(dto.email());
-        }
+        checkEmailUniquenessOrThrow(dto.email());
+        var role = fetchRoleOrThrow(DEFAULT_ROLE_ID);
+        var entity = mapper.fromCreate(dto, role, passwordEncoder.encode(dto.password()));
 
-        Role role = roleRepo.findById(DEFAULT_ROLE_ID)
-                .orElseThrow(() -> new NotFoundException("Role", DEFAULT_ROLE_ID));
-
-        AppUser entity = mapper.fromCreate(dto, role, passwordEncoder.encode(dto.password()));
         userRepo.save(entity);
         return mapper.toSummary(entity);
     }
 
     public AppUser authenticate(UserLoginRequest request) {
-        AppUser user = userRepo.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+        var user = userRepo.findByEmail(request.email())
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
-        }
-
+        checkPasswordOrThrow(request.password(), user.getPassword());
         return user;
     }
 
     public void changePassword(UserChangePasswordRequest request) {
-        AppUser user = userRepo.findById(request.userId())
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
-        }
-
+        var user = fetchUserOrThrow(request.userId());
+        checkPasswordOrThrow(request.currentPassword(), user.getPassword());
         user.setPassword(passwordEncoder.encode(request.newPassword()));
     }
 
     public AppUser getEntity(Long id) {
-        return userRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public UserDetailResponse get(Long id) {
-        AppUser user = userRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("User", id));
-        if (!user.getIsDeleted())
-            throw new NotFoundException("User", id);
-
-        return mapper.toDetail(user);
+        return fetchUserOrThrow(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<UserSummaryResponse> list() {
-        return userRepo.findAll().stream()
-                .filter(user -> user.getIsDeleted() == false)
+        return userRepo.findByIsDeletedFalse().stream()
                 .map(mapper::toSummary)
                 .toList();
     }
 
     @Override
-    public void update(Long id, UserUpdateRequest dto) {
-        AppUser user = userRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("User", id));
+    @Transactional(readOnly = true)
+    public UserDetailResponse get(Long id) {
+        return mapper.toDetail(fetchUserOrThrow(id));
+    }
 
-        boolean existence = userRepo.existsByEmail(dto.email());
-        if (existence) {
-            throw new EmailAlreadyExistsException(dto.email());
-        }
+    @Override
+    public UserSummaryResponse update(Long id, UserUpdateRequest dto) {
+        var user = fetchUserOrThrow(id);
 
-        Role role = roleRepo.findById(dto.roleId())
-                .orElseThrow(() -> new NotFoundException("User", id));
+        checkEmailUniquenessOrThrow(dto.email());
+        var role = fetchRoleOrThrow(dto.roleId());
 
         mapper.applyUpdate(user, dto, role);
+        return mapper.toSummary(user);
     }
 
     @Override
-    public void patch(Long id, UserPatchRequest dto) {
-        AppUser user = userRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("User", id));
+    public UserSummaryResponse patch(Long id, UserPatchRequest dto) {
+        AppUser user = fetchUserOrThrow(id);
 
-        if (dto.email() != null) {
-            boolean existence = userRepo.existsByEmail(dto.email());
-            if (existence) {
-                throw new EmailAlreadyExistsException(dto.email());
-            }
-        }
+        if (dto.email() != null)
+            checkEmailUniquenessOrThrow(dto.email());
 
         Role role = null;
-        if (dto.roleId() != null) {
-            role = roleRepo.findById(dto.roleId())
-                    .orElseThrow(() -> new NotFoundException("Role", dto.roleId()));
-        }
+        if (dto.roleId() != null)
+            role = fetchRoleOrThrow(dto.roleId());
 
         mapper.applyPatch(user, dto, role);
+        return mapper.toSummary(user);
     }
 
     @Override
-    public void softDelete(Long id, String deleter) {
-        AppUser user = userRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("User", id));
+    public void softDelete(Long id, Long currentUserId) {
+        AppUser user = fetchUserOrThrow(id);
 
-        user.setIsDeleted(true);
-        user.setDeletedBy(deleter);
+        checkDeletePermission(id, currentUserId);
+
+        user.setDeletedBy(fetchUserOrThrow(currentUserId).getEmail());
         user.setDeletedAt(LocalDateTime.now());
+        user.setIsDeleted(true);
     }
 
     @Override
-    public void hardDeleted(Long id) {
+    public void hardDeleted(Long id, Long currentUserId) {
         if (!userRepo.existsById(id)) {
             throw new NotFoundException("User", id);
         }
+        checkDeletePermission(id, currentUserId);
+
         userRepo.deleteById(id);
+    }
+
+    private AppUser fetchUserOrThrow(Long id) {
+        return userRepo.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("User", id));
+    }
+
+    private Role fetchRoleOrThrow(Integer roleId) {
+        return roleRepo.findById(roleId)
+                .orElseThrow(() -> new NotFoundException("Role", roleId));
+    }
+
+    private void checkEmailUniquenessOrThrow(String email) {
+        if (userRepo.existsByEmail(email))
+            throw new EmailAlreadyExistsException(email);
+    }
+
+    private void checkPasswordOrThrow(String rawPassword, String hashedPassword) {
+        if (!passwordEncoder.matches(rawPassword, hashedPassword)) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+    }
+
+    private void checkDeletePermission(Long id, Long currentUserId) {
+        if (!fetchUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN") && !id.equals(currentUserId))
+            throw new AccessDeniedException("You don't have enough authorities to delete this user");
     }
 }

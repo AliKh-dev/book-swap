@@ -52,7 +52,7 @@ public class AuthService {
     public RefreshResponse refreshAccessToken(String token) {
         var jwt = jwtService.parse(token);
         if (jwt == null || jwt.isExpired()) {
-            throw new UnauthorizedException();
+            throw new UnauthorizedException("Token is invalid");
         }
 
         AppUser user = userService.getEntity(jwt.getUserId());

@@ -5,10 +5,12 @@ import com.alikh.bookswap.dto.user.request.UserPatchRequest;
 import com.alikh.bookswap.dto.user.request.UserUpdateRequest;
 import com.alikh.bookswap.dto.user.response.UserDetailResponse;
 import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
+import com.alikh.bookswap.service.Jwt;
 import com.alikh.bookswap.service.contract.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -22,16 +24,6 @@ public class UserController {
 
     private final UserService service;
 
-    @PostMapping
-    public ResponseEntity<UserSummaryResponse> create(
-            UriComponentsBuilder uriBuilder,
-            @RequestBody @Valid UserCreateRequest dto) {
-        var user = service.create(dto);
-        var uri = uriBuilder.path("api/books/{id}").buildAndExpand(user.id()).toUri();
-
-        return ResponseEntity.created(uri).body(user);
-    }
-
     @GetMapping
     public ResponseEntity<List<UserSummaryResponse>> list() {
         return ResponseEntity.ok(service.list());
@@ -43,30 +35,36 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(@PathVariable Long id,
-                       @RequestBody @Valid UserUpdateRequest dto) {
-        service.update(id, dto);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<UserSummaryResponse> update(
+            @PathVariable Long id,
+            @RequestBody @Valid UserUpdateRequest dto
+    ) {
+        return ResponseEntity.ok(service.update(id, dto));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> patch(@PathVariable Long id,
-                      @RequestBody @Valid UserPatchRequest dto) {
-        service.patch(id, dto);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<UserSummaryResponse> patch(
+            @PathVariable Long id,
+            @RequestBody @Valid UserPatchRequest dto
+    ) {
+        return ResponseEntity.ok(service.patch(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDelete(@PathVariable Long id) {
-        // TODO: probably should be change logic of getting name from SecurityContextHolder
-        var username = SecurityContextHolder.getContext().getAuthentication().getName();
-        service.softDelete(id, username);
+    public ResponseEntity<Void> softDelete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        service.softDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/hard-delete/{id}")
-    public ResponseEntity<Void> hardDelete(@PathVariable Long id) {
-        service.hardDeleted(id);
+    public ResponseEntity<Void> hardDelete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        service.hardDeleted(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

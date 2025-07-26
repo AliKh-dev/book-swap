@@ -20,11 +20,11 @@ public interface UserService {
 
     List<UserSummaryResponse> list();
 
-    void update(Long id, UserUpdateRequest dto);
+    UserSummaryResponse update(Long id, UserUpdateRequest dto);
 
-    void patch(Long id, UserPatchRequest dto);
+    UserSummaryResponse patch(Long id, UserPatchRequest dto);
 
-    void softDelete(Long id, String deleter);
+    void softDelete(Long id, Long currentUserId);
 
-    void hardDeleted(Long id);
+    void hardDeleted(Long id, Long currentUserId);
 }
