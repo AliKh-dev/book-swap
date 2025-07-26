@@ -2,6 +2,7 @@ package com.alikh.bookswap.controller;
 
 import com.alikh.bookswap.dto.error.ErrorResponse;
 import com.alikh.bookswap.dto.error.ValidationErrorResponse;
+import com.alikh.bookswap.exception.CodeAlreadyExistsException;
 import com.alikh.bookswap.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -26,6 +27,17 @@ public class ApiErrorHandler {
         );
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(body);
+    }
+
+    @ExceptionHandler(CodeAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateCode(CodeAlreadyExistsException ex) {
+        var body = new ErrorResponse(
+                "CONFLICT",
+                ex.getMessage()
+        );
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(body);
     }
 
