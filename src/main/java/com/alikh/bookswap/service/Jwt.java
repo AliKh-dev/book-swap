@@ -27,6 +27,10 @@ public class Jwt {
         return claims.get("role").toString();
     }
 
+    public String getEmail() {
+        return claims.get("email").toString();
+    }
+
     public String getName() {
         return claims.get("name").toString();
     }
