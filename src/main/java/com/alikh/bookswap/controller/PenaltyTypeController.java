@@ -39,21 +39,19 @@ public class PenaltyTypeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> update(
+    public ResponseEntity<PenaltyTypeSummaryResponse> update(
             @PathVariable Integer id,
             @RequestBody @Valid PenaltyTypeUpdateRequest request
     ) {
-        service.update(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Void> patch(
+    public ResponseEntity<PenaltyTypeSummaryResponse> patch(
             @PathVariable Integer id,
             @RequestBody @Valid PenaltyTypePatchRequest request
     ) {
-        service.patch(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(service.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
