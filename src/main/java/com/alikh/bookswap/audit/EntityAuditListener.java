@@ -1,10 +1,10 @@
 package com.alikh.bookswap.audit;
 
 import com.alikh.bookswap.entity.BaseEntity;
-import com.alikh.bookswap.entity.SoftDeletableEntity;
+import com.alikh.bookswap.service.Jwt;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,10 +16,10 @@ public class EntityAuditListener {
 
     private String currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
+        if (auth == null || auth instanceof AnonymousAuthenticationToken) {
             return "Anonymous";
         }
-        return auth.getName();
+        return ((Jwt)auth.getPrincipal()).getEmail();
     }
 
     @PrePersist
