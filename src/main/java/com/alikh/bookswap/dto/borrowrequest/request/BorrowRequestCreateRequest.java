@@ -4,12 +4,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record BorrowRequestCreateRequest(
         @NotNull
-        Long listingId,
-        Integer statusId
+        Long listingId
 ) {
-
-    public BorrowRequestCreateRequest {
-        if (statusId == null)
-            statusId = 1;
-    }
 }

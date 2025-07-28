@@ -10,7 +10,13 @@ import java.util.Optional;
 @Repository
 public interface BorrowRequestRepository extends JpaRepository<BorrowRequest, Long> {
 
+    boolean existsByListingIdAndStatusId(Long listingId, Integer StatusId);
+
     List<BorrowRequest> findByIsDeletedFalse();
+
+    List<BorrowRequest> findByBorrowerIdAndIsDeletedFalse(Long borrowerId);
+
+    List<BorrowRequest> findByListingBookOwnerIdAndIsDeletedFalse(Long ownerId);
 
     Optional<BorrowRequest> findByIdAndIsDeletedFalse(Long id);
 }

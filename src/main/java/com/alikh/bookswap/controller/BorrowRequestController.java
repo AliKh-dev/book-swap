@@ -37,15 +37,26 @@ public class BorrowRequestController {
             @RequestBody @Valid BorrowRequestCreateRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        // TODO: if user is admin I should give it permission to give borrowerId of someone else
         var response = service.create(request, jwt.getUserId());
         var uri = uriBuilder.path("/api/borrow-requests/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<List<BorrowRequestSummaryResponse>> list() {
         return ResponseEntity.ok(service.list());
+    }
+
+    @GetMapping
+    public ResponseEntity<List<BorrowRequestSummaryResponse>> list(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(service.list(jwt.getUserId()));
+    }
+
+    @GetMapping("/me/borrow-requests")
+    public ResponseEntity<List<BorrowRequestSummaryResponse>> listRelatedToOwner(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.listRelatedToOwner(jwt.getUserId()));
     }
 
     @GetMapping("/{id}")
@@ -56,17 +67,19 @@ public class BorrowRequestController {
     @PutMapping("/{id}")
     public ResponseEntity<BorrowRequestSummaryResponse> update(
             @PathVariable Long id,
-            @RequestBody @Validated BorrowRequestUpdateRequest request
+            @RequestBody @Validated BorrowRequestUpdateRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(service.update(id, request));
+        return ResponseEntity.ok(service.update(id, jwt.getUserId(), request));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<BorrowRequestSummaryResponse> patch(
             @PathVariable Long id,
-            @RequestBody BorrowRequestPatchRequest request
+            @RequestBody BorrowRequestPatchRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(service.patch(id, request));
+        return ResponseEntity.ok(service.patch(id, jwt.getUserId(), request));
     }
 
     @DeleteMapping("/{id}")

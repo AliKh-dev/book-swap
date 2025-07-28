@@ -7,7 +7,9 @@ import com.alikh.bookswap.entity.BorrowRequest;
 import com.alikh.bookswap.entity.Listing;
 import com.alikh.bookswap.entity.RequestStatus;
 import com.alikh.bookswap.exception.AccessDeniedException;
+import com.alikh.bookswap.exception.BorrowRequestStatusConflictException;
 import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.UnauthorizedStatusChangeException;
 import com.alikh.bookswap.mapper.BorrowRequestMapper;
 import com.alikh.bookswap.repository.BorrowRequestRepository;
 import com.alikh.bookswap.repository.ListingRepository;
@@ -26,6 +28,9 @@ import java.util.List;
 @Transactional
 public class BorrowRequestServiceImpl implements BorrowRequestService {
 
+    private final static int INITIAL_STATUS_ID = 1;
+    private final static int APPROVED_STATUS_ID = 2;
+
     private final BorrowRequestRepository repo;
     private final ListingRepository listingRepo;
     private final RequestStatusRepository statusRepo;
@@ -37,11 +42,15 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
             BorrowRequestCreateRequest dto,
             Long borrowerId
     ) {
-        Listing listing = fetchActiveListingOrThrow(dto.listingId());
-        AppUser borrower = fetchActiveUserOrThrow(borrowerId);
-        RequestStatus initStatus = fetchStatusOrThrow(dto.statusId());
+        var listing = fetchActiveListingOrThrow(dto.listingId());
+        if (listing.getBook().getOwner().getId().equals(borrowerId))
+            // TODO: I should change the exception type & message
+            throw new AccessDeniedException("This book belong to you.");
 
-        var entity = mapper.fromCreate(dto, listing, borrower, initStatus);
+        var borrower = fetchActiveUserOrThrow(borrowerId);
+        var status = fetchStatusOrThrow(INITIAL_STATUS_ID);
+
+        var entity = mapper.fromCreate(dto, listing, borrower, status);
         repo.save(entity);
         return mapper.toSummary(entity);
     }
@@ -56,6 +65,22 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<BorrowRequestSummaryResponse> list(Long borrowerId) {
+        return repo.findByBorrowerIdAndIsDeletedFalse(borrowerId).stream()
+                .map(mapper::toSummary)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BorrowRequestSummaryResponse> listRelatedToOwner(Long bookOwnerId) {
+        return repo.findByListingBookOwnerIdAndIsDeletedFalse(bookOwnerId).stream()
+                .map(mapper::toSummary)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public BorrowRequestDetailResponse get(Long id) {
         return mapper.toDetail(fetchBorrowRequestOrThrow(id));
     }
@@ -63,10 +88,14 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
     @Override
     public BorrowRequestSummaryResponse update(
             Long id,
+            Long currentUserId,
             BorrowRequestUpdateRequest dto
     ) {
         var entity = fetchBorrowRequestOrThrow(id);
+        checkUnauthorizedToChangeRequestStatus(currentUserId, entity);
+
         var status = fetchStatusOrThrow(dto.statusId());
+        checkDuplicateApprovedRequest(entity, status);
 
         mapper.applyUpdate(entity, dto, status);
         return mapper.toSummary(entity);
@@ -75,14 +104,17 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
     @Override
     public BorrowRequestSummaryResponse patch(
             Long id,
+            Long currentUserId,
             BorrowRequestPatchRequest dto
     ) {
         var entity = fetchBorrowRequestOrThrow(id);
+        checkUnauthorizedToChangeRequestStatus(currentUserId, entity);
 
         RequestStatus status = null;
-        if (dto.statusId() != null)
+        if (dto.statusId() != null) {
             status = fetchStatusOrThrow(dto.statusId());
-
+            checkDuplicateApprovedRequest(entity, status);
+        }
         mapper.applyPatch(entity, dto, status);
         return mapper.toSummary(entity);
     }
@@ -125,6 +157,18 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
     private Listing fetchActiveListingOrThrow(Long listingId) {
         return listingRepo.findByIdAndIsDeletedFalse(listingId)
                 .orElseThrow(() -> new NotFoundException("Listing", listingId));
+    }
+
+    private void checkUnauthorizedToChangeRequestStatus(Long currentUserId, BorrowRequest entity) {
+        if (!entity.getListing().getBook().getOwner().getId().equals(currentUserId) ||
+                !fetchActiveUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN"))
+            throw new UnauthorizedStatusChangeException("You don't have enough authorities to change status of this request");
+    }
+
+    private void checkDuplicateApprovedRequest(BorrowRequest entity, RequestStatus status) {
+        if (repo.existsByListingIdAndStatusId(entity.getListing().getId(), APPROVED_STATUS_ID) &&
+                status.getId().equals(APPROVED_STATUS_ID))
+            throw new BorrowRequestStatusConflictException("You can't have two borrow request with 'APPROVED' status");
     }
 
     private void checkRequestOwnerOrThrow(Long currentUserId, Long borrowerId) {

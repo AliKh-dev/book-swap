@@ -11,11 +11,15 @@ public interface BorrowRequestService {
 
     List<BorrowRequestSummaryResponse> list();
 
+    List<BorrowRequestSummaryResponse> list(Long borrowerId);
+
+    List<BorrowRequestSummaryResponse> listRelatedToOwner(Long bookOwnerId);
+
     BorrowRequestDetailResponse get(Long id);
 
-    BorrowRequestSummaryResponse update(Long id, BorrowRequestUpdateRequest dto);
+    BorrowRequestSummaryResponse update(Long id, Long currentUserId, BorrowRequestUpdateRequest dto);
 
-    BorrowRequestSummaryResponse patch(Long id, BorrowRequestPatchRequest dto);
+    BorrowRequestSummaryResponse patch(Long id, Long currentUserId, BorrowRequestPatchRequest dto);
 
     void softDelete(Long id, Long currentUserId);
 
