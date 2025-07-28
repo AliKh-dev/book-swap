@@ -6,16 +6,21 @@ import com.alikh.bookswap.exception.InvalidTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.util.Date;
 
-@RequiredArgsConstructor
 @Service
 public class JwtService {
 
     private final JwtConfig config;
+    private final SecretKey secretKey;
+
+    public JwtService(JwtConfig config) {
+        this.config = config;
+        this.secretKey = config.getSecretKey();
+    }
 
     public Jwt generateAccessToken(AppUser user) {
         return generateToken(user, config.getAccessTokenExpiration());
@@ -38,13 +43,13 @@ public class JwtService {
                 .expiration(exp)
                 .build();
 
-        return new Jwt(claims, config.getSecretKey());
+        return new Jwt(claims, secretKey);
     }
 
     public Jwt parse(String token) {
         try {
             var claims = getClaims(token);
-            return new Jwt(claims, config.getSecretKey());
+            return new Jwt(claims, secretKey);
         } catch (JwtException exception) {
             throw new InvalidTokenException("Invalid JWT", exception);
         }
@@ -52,7 +57,7 @@ public class JwtService {
 
     private Claims getClaims(String token) {
         return Jwts.parser()
-                .verifyWith(config.getSecretKey())
+                .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

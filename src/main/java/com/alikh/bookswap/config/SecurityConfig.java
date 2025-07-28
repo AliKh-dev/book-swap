@@ -6,14 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -24,58 +21,59 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(sm -> sm
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .csrf(AbstractHttpConfigurer::disable)
+                .anonymous(AbstractHttpConfigurer::disable)
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
-            .authorizeHttpRequests(auth -> auth
-                    // public endpoints
-                    .requestMatchers(
-                            "/api/auth/register",
-                            "/api/auth/login",
-                            "/api/auth/refresh").permitAll()
+                // ───────────────────────────────────────────────────────────────
+                // Authorisation rules
+                // ───────────────────────────────────────────────────────────────
+                .authorizeHttpRequests(auth -> auth
+                        // ── public docs / health ───────────────────────────────
+                        .requestMatchers(
+                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+                                "/actuator/health").permitAll()
 
-                    // get details are public
-                    .requestMatchers(HttpMethod.GET, "/api/books/*").permitAll()
+                        // ── auth endpoints ─────────────────────────────────────
+                        .requestMatchers("/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/refresh").permitAll()
 
-                    // creating a book requires any authenticated user
-                    .requestMatchers(HttpMethod.GET, "/api/books").authenticated()
-                    .requestMatchers(HttpMethod.POST, "/api/books").authenticated()
-                    .requestMatchers(HttpMethod.PUT, "/api/books/*").authenticated()
-                    .requestMatchers(HttpMethod.PATCH, "/api/books/*").authenticated()
-                    .requestMatchers(HttpMethod.DELETE, "/api/books/*").authenticated()
+                        // ── book catalogue (read-only) ─────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
 
-                    // any other endpoint under /api/users requires authentication
-                    .requestMatchers("/api/users/**").authenticated()
+                        // ── book mutate operations – must be logged-in ─────────
+                        .requestMatchers("/api/books/**").authenticated()
 
-                    .anyRequest().permitAll()
-            );
+                        // ── “me” resources ─────────────────────────────────────
+                        .requestMatchers("/api/me/**").authenticated()
+
+                        // ── admin area ─────────────────────────────────────────
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // ── everything else is closed by default ───────────────
+                        .anyRequest().denyAll()
+                );
 
         return http.build();
     }
 
+    // ───────────────────────────────────────────────────────────────
+    // Beans
+    // ───────────────────────────────────────────────────────────────
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        var provider = new DaoAuthenticationProvider(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
+        return cfg.getAuthenticationManager();
     }
 }

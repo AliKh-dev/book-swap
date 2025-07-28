@@ -1,5 +1,6 @@
 package com.alikh.bookswap.filter;
 
+import com.alikh.bookswap.exception.TokenExpiredException;
 import com.alikh.bookswap.service.Jwt;
 import com.alikh.bookswap.service.JwtService;
 import jakarta.servlet.FilterChain;
@@ -7,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,17 +39,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.replace("Bearer ", "");
         Jwt jwt = jwtService.parse(token);
-        if (jwt == null || jwt.isExpired()) {
-            filterChain.doFilter(request, response);
-            return;
+        if (jwt.isExpired()) {
+            throw new TokenExpiredException();
         }
+
+        var authorities = List.of(
+                new SimpleGrantedAuthority("ROLE_" + jwt.getRoleCode())
+        );
 
         var authentication = new UsernamePasswordAuthenticationToken(
                 jwt,
                 null,
-                Collections.emptyList()
-                // TODO: implement this
-//                List.of(new SimpleGrantedAuthority("ROLE_" + jwt.getRole()))
+                authorities
         );
         authentication.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request)

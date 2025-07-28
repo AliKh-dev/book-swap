@@ -35,7 +35,7 @@ public class Jwt {
         return claims.get("name").toString();
     }
 
-    public String toString() {
+    public String asToken() {
         return Jwts.builder()
                 .claims(claims)
                 .signWith(secretKey)

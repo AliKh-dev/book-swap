@@ -16,7 +16,7 @@ public class EntityAuditListener {
 
     private String currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+        if (auth == null || !auth.isAuthenticated()) {
             return "Anonymous";
         }
         return ((Jwt)auth.getPrincipal()).getEmail();

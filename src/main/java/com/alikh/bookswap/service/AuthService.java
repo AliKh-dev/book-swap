@@ -44,8 +44,8 @@ public class AuthService {
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
-                accessToken.toString(),
-                refreshToken.toString()
+                accessToken.asToken(),
+                refreshToken.asToken()
         );
     }
 
@@ -62,8 +62,8 @@ public class AuthService {
 
         return new RefreshResponse(
                 user.getEmail(),
-                accessToken.toString(),
-                refreshToken.toString()
+                accessToken.asToken(),
+                refreshToken.asToken()
         );
     }
 
