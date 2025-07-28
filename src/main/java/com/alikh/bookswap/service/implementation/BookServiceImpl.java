@@ -28,8 +28,8 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookSummaryResponse create(BookCreateRequest dto, Long ownerId) {
-        BookCondition condition = fetchBookConditionOrThrow(dto.conditionId());
-        AppUser owner = fetchUserOrThrow(ownerId);
+        var condition = fetchBookConditionOrThrow(dto.conditionId());
+        var owner = fetchUserOrThrow(ownerId);
 
         Book entity = mapper.fromCreate(dto, condition, owner);
         bookRepo.save(entity);
@@ -52,7 +52,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookSummaryResponse update(Long id, BookUpdateRequest dto, Long currentUserId) {
-        Book book = fetchActiveBookOrThrow(id);
+        var book = fetchActiveBookOrThrow(id);
         checkBookOwnerOrThrow(currentUserId, book);
 
         BookCondition condition = fetchBookConditionOrThrow(dto.conditionId());
@@ -63,7 +63,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public BookSummaryResponse patch(Long id, BookPatchRequest dto, Long currentUserId) {
-        Book book = fetchActiveBookOrThrow(id);
+        var book = fetchActiveBookOrThrow(id);
         checkBookOwnerOrThrow(currentUserId, book);
 
         BookCondition condition = null;
@@ -76,7 +76,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public void softDelete(Long id, Long currentUserId) {
-        Book book = fetchActiveBookOrThrow(id);
+        var book = fetchActiveBookOrThrow(id);
         checkBookOwnerOrThrow(currentUserId, book);
 
         book.setDeletedBy(fetchUserOrThrow(currentUserId).getEmail());
@@ -86,7 +86,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public void hardDelete(Long id, Long currentUserId) {
-        Book book = bookRepo.findById(id)
+        var book = bookRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Book", id));
         checkBookOwnerOrThrow(currentUserId, book);
         bookRepo.deleteById(id);
