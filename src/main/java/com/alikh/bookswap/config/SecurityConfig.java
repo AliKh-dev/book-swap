@@ -43,10 +43,11 @@ public class SecurityConfig {
                             "/api/auth/login",
                             "/api/auth/refresh").permitAll()
 
-                    // list & get details are public
-                    .requestMatchers(HttpMethod.GET, "/api/books", "/api/books/*").permitAll()
+                    // get details are public
+                    .requestMatchers(HttpMethod.GET, "/api/books/*").permitAll()
 
                     // creating a book requires any authenticated user
+                    .requestMatchers(HttpMethod.GET, "/api/books").authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/books").authenticated()
                     .requestMatchers(HttpMethod.PUT, "/api/books/*").authenticated()
                     .requestMatchers(HttpMethod.PATCH, "/api/books/*").authenticated()

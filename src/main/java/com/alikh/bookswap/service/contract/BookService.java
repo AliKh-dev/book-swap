@@ -9,7 +9,7 @@ public interface BookService {
 
     BookSummaryResponse create(BookCreateRequest dto, Long ownerId);
 
-    List<BookSummaryResponse> list();
+    List<BookSummaryResponse> list(Long ownerId);
 
     BookDetailResponse get(Long id);
 

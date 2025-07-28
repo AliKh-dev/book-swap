@@ -38,8 +38,8 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookSummaryResponse> list() {
-        return bookRepo.findByIsDeletedFalse().stream()
+    public List<BookSummaryResponse> list(Long ownerId) {
+        return bookRepo.findByOwnerIdAndIsDeletedFalse(ownerId).stream()
                 .map(mapper::toSummary)
                 .toList();
     }

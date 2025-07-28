@@ -36,8 +36,10 @@ public class BookController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BookSummaryResponse>> list() {
-        return ResponseEntity.ok(service.list());
+    public ResponseEntity<List<BookSummaryResponse>> list(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.list(jwt.getUserId()));
     }
 
     @GetMapping("/{id}")
