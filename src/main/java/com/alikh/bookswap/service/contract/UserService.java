@@ -24,6 +24,8 @@ public interface UserService {
 
     UserSummaryResponse patch(Long id, UserPatchRequest dto);
 
+    UserSummaryResponse changeRole(Long id, UserRoleChangeRequest dto);
+
     void softDelete(Long id, Long currentUserId);
 
     void hardDeleted(Long id, Long currentUserId);

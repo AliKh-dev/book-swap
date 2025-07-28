@@ -13,7 +13,6 @@ import com.alikh.bookswap.mapper.UserMapper;
 import com.alikh.bookswap.repository.RoleRepository;
 import com.alikh.bookswap.repository.UserRepository;
 import com.alikh.bookswap.service.contract.UserService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -78,33 +77,37 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserSummaryResponse update(Long id, UserUpdateRequest dto) {
+        checkEmailUniquenessOrThrow(dto.email());
+
         var user = fetchUserOrThrow(id);
 
-        checkEmailUniquenessOrThrow(dto.email());
-        var role = fetchRoleOrThrow(dto.roleId());
-
-        mapper.applyUpdate(user, dto, role);
+        mapper.applyUpdate(user, dto);
         return mapper.toSummary(user);
     }
 
     @Override
     public UserSummaryResponse patch(Long id, UserPatchRequest dto) {
-        AppUser user = fetchUserOrThrow(id);
-
         if (dto.email() != null)
             checkEmailUniquenessOrThrow(dto.email());
 
-        Role role = null;
-        if (dto.roleId() != null)
-            role = fetchRoleOrThrow(dto.roleId());
+        var user = fetchUserOrThrow(id);
 
-        mapper.applyPatch(user, dto, role);
+        mapper.applyPatch(user, dto);
         return mapper.toSummary(user);
     }
 
     @Override
+    public UserSummaryResponse changeRole(Long id, UserRoleChangeRequest dto) {
+        var entity = fetchUserOrThrow(id);
+        var role = fetchRoleOrThrow(dto.roleId());
+
+        entity.setRole(role);
+        return mapper.toSummary(entity);
+    }
+
+    @Override
     public void softDelete(Long id, Long currentUserId) {
-        AppUser user = fetchUserOrThrow(id);
+        var user = fetchUserOrThrow(id);
 
         checkDeletePermission(id, currentUserId);
 

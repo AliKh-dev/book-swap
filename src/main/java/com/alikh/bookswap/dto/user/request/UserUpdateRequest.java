@@ -7,8 +7,5 @@ public record UserUpdateRequest(
         String email,
 
         @NotBlank
-        String name,
-
-        @NotNull
-        Integer roleId) {
+        String name) {
 }

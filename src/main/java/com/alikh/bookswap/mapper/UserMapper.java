@@ -48,15 +48,13 @@ public class UserMapper {
                 .build();
     }
 
-    public void applyUpdate(AppUser user, UserUpdateRequest request, Role role) {
+    public void applyUpdate(AppUser user, UserUpdateRequest request) {
         user.setEmail(request.email());
         user.setName(request.name());
-        user.setRole(role);
     }
 
-    public void applyPatch(AppUser user, UserPatchRequest request, Role role) {
+    public void applyPatch(AppUser user, UserPatchRequest request) {
         if (request.email() != null) user.setEmail(request.email());
         if (request.name() != null) user.setName(request.name());
-        if (role != null) user.setRole(role);
     }
 }

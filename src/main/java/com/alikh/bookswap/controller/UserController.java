@@ -2,6 +2,7 @@ package com.alikh.bookswap.controller;
 
 import com.alikh.bookswap.dto.user.request.UserCreateRequest;
 import com.alikh.bookswap.dto.user.request.UserPatchRequest;
+import com.alikh.bookswap.dto.user.request.UserRoleChangeRequest;
 import com.alikh.bookswap.dto.user.request.UserUpdateRequest;
 import com.alikh.bookswap.dto.user.response.UserDetailResponse;
 import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
@@ -48,6 +49,14 @@ public class UserController {
             @RequestBody @Valid UserPatchRequest dto
     ) {
         return ResponseEntity.ok(service.patch(id, dto));
+    }
+
+    @PutMapping("/change-role/{id}")
+    public ResponseEntity<UserSummaryResponse> changeRole(
+            @PathVariable Long id,
+            @RequestBody @Valid UserRoleChangeRequest dto
+    ) {
+        return ResponseEntity.ok(service.changeRole(id, dto));
     }
 
     @DeleteMapping("/{id}")
