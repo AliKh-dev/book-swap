@@ -7,9 +7,11 @@ import java.util.List;
 
 public interface ListingService {
 
-    ListingSummaryResponse create(ListingCreateRequest dto);
+    ListingSummaryResponse create(ListingCreateRequest dto, Long bookOwnerId);
 
     List<ListingSummaryResponse> list();
+
+    List<ListingSummaryResponse> list(Long bookOwnerId);
 
     ListingDetailResponse get(Long id);
 

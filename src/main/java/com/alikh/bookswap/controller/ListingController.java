@@ -27,9 +27,10 @@ public class ListingController {
     @PostMapping
     public ResponseEntity<ListingSummaryResponse> create(
             UriComponentsBuilder uriBuilder,
-            @RequestBody @Valid ListingCreateRequest request
+            @RequestBody @Valid ListingCreateRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        var response = service.create(request);
+        var response = service.create(request, jwt.getUserId());
         var uri = uriBuilder.path("/api/listings/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
     }

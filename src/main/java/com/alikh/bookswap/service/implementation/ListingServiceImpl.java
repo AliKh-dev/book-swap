@@ -28,11 +28,14 @@ public class ListingServiceImpl implements ListingService {
     private final ListingMapper mapper;
 
     @Override
-    public ListingSummaryResponse create(ListingCreateRequest dto) {
-        Book book = fetchBookOrThrow(dto.bookId());
-        ListingType type = fetchTypeOrThrow(dto.typeId());
+    public ListingSummaryResponse create(ListingCreateRequest dto, Long bookOwnerId) {
+        var book = fetchBookOrThrow(dto.bookId());
+        if (!book.getOwner().getId().equals(bookOwnerId))
+            throw new AccessDeniedException("This request dose not belong to you.");
 
-        Listing entity = mapper.fromCreate(dto, book, type);
+        var type = fetchTypeOrThrow(dto.typeId());
+
+        var entity = mapper.fromCreate(dto, book, type);
         repo.save(entity);
         return mapper.toSummary(entity);
     }
@@ -41,6 +44,14 @@ public class ListingServiceImpl implements ListingService {
     @Transactional(readOnly = true)
     public List<ListingSummaryResponse> list() {
         return repo.findByIsDeletedFalse().stream()
+                .map(mapper::toSummary)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ListingSummaryResponse> list(Long bookOwnerId) {
+        return repo.findByBookOwnerIdAndIsDeletedFalse(bookOwnerId).stream()
                 .map(mapper::toSummary)
                 .toList();
     }

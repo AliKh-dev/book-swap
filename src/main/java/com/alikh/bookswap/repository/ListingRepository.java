@@ -12,5 +12,7 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
 
     List<Listing> findByIsDeletedFalse();
 
+    List<Listing> findByBookOwnerIdAndIsDeletedFalse(Long bookOwnerId);
+
     Optional<Listing> findByIdAndIsDeletedFalse(Long id);
 }
