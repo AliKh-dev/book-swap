@@ -1,5 +1,6 @@
 package com.alikh.bookswap.repository;
 
+import com.alikh.bookswap.dto.book.response.BookSummaryResponse;
 import com.alikh.bookswap.entity.Book;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -13,4 +14,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findByOwnerIdAndIsDeletedFalse(Long ownerId);
     
     Optional<Book> findByIdAndIsDeletedFalse(Long id);
+
+    List<Book> findByIsDeletedFalse();
 }

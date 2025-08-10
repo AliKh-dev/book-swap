@@ -8,6 +8,8 @@ import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.entity.RequestStatus;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Component
 public class BorrowRequestMapper {
 
@@ -39,8 +41,7 @@ public class BorrowRequestMapper {
 
     /* ---------- Create / Update requests -> Entity ---------- */
 
-    public BorrowRequest fromCreate(BorrowRequestCreateRequest request,
-                                    Listing listing,
+    public BorrowRequest fromCreate(Listing listing,
                                     AppUser borrower,
                                     RequestStatus initStatus) {
 
@@ -48,7 +49,7 @@ public class BorrowRequestMapper {
                 .listing(listing)
                 .borrower(borrower)
                 .status(initStatus)
-                .requestedAt(java.time.LocalDateTime.now())
+                .requestedAt(LocalDateTime.now())
                 .build();
     }
 

@@ -7,13 +7,13 @@ import java.util.List;
 
 public interface BorrowRequestService {
 
-    BorrowRequestSummaryResponse create(BorrowRequestCreateRequest dto, Long borrowerId);
+    BorrowRequestSummaryResponse create(Long listingId, Long borrowerId);
+
+    List<BorrowRequestSummaryResponse> listMine(Long currentUserId);
+
+    List<BorrowRequestSummaryResponse> listByOwner(Long bookOwnerId);
 
     List<BorrowRequestSummaryResponse> list();
-
-    List<BorrowRequestSummaryResponse> list(Long borrowerId);
-
-    List<BorrowRequestSummaryResponse> listRelatedToOwner(Long bookOwnerId);
 
     BorrowRequestDetailResponse get(Long id);
 

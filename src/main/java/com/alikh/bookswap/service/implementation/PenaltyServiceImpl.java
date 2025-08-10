@@ -4,6 +4,7 @@ import com.alikh.bookswap.dto.penalty.request.*;
 import com.alikh.bookswap.dto.penalty.response.*;
 import com.alikh.bookswap.entity.*;
 import com.alikh.bookswap.exception.AccessDeniedException;
+import com.alikh.bookswap.exception.DuplicatePenaltyException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.PenaltyMapper;
 import com.alikh.bookswap.repository.*;
@@ -28,8 +29,11 @@ public class PenaltyServiceImpl implements PenaltyService {
     private final PenaltyMapper mapper;
 
     @Override
-    public PenaltySummaryResponse create(PenaltyCreateRequest dto) {
-        var request = fetchActiveRequestOrThrow(dto.requestId());
+    public PenaltySummaryResponse create(PenaltyCreateRequest dto, Long reqId) {
+        if (repo.existsByRequestId(reqId)) {
+            throw new DuplicatePenaltyException(reqId);
+        }
+        var request = fetchActiveRequestOrThrow(reqId);
         var type = fetchPenaltyTypeOrThrow(dto.typeId());
 
         var entity = mapper.fromCreate(dto, request, type);
@@ -125,8 +129,12 @@ public class PenaltyServiceImpl implements PenaltyService {
     }
 
     private void checkDeletePermission(Long currentUserId) {
-        if (!fetchActiveUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN"))
-            throw new AccessDeniedException("You don't have enough authorities to delete this user");
+        if (!isAdmin(currentUserId)) {
+            throw new AccessDeniedException("You don't have authority to delete this penalty");
+        }
+    }
 
+    private boolean isAdmin(Long userId) {
+        return "ADMIN".equals(fetchActiveUserOrThrow(userId).getRole().getCode());
     }
 }

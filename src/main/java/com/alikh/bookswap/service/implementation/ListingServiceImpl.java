@@ -4,6 +4,8 @@ import com.alikh.bookswap.dto.listing.request.*;
 import com.alikh.bookswap.dto.listing.response.*;
 import com.alikh.bookswap.entity.*;
 import com.alikh.bookswap.exception.AccessDeniedException;
+import com.alikh.bookswap.exception.DuplicateActiveListingException;
+import com.alikh.bookswap.exception.InvalidListingException;
 import com.alikh.bookswap.exception.NotFoundException;
 import com.alikh.bookswap.mapper.ListingMapper;
 import com.alikh.bookswap.repository.*;
@@ -28,12 +30,23 @@ public class ListingServiceImpl implements ListingService {
     private final ListingMapper mapper;
 
     @Override
-    public ListingSummaryResponse create(ListingCreateRequest dto, Long bookOwnerId) {
-        var book = fetchBookOrThrow(dto.bookId());
-        if (!book.getOwner().getId().equals(bookOwnerId))
-            throw new AccessDeniedException("This request dose not belong to you.");
+    public ListingSummaryResponse create(ListingCreateRequest dto, Long bookId, Long currentUserId) {
+        var book = fetchBookOrThrow(bookId);
+        checkBookOwnerOrThrow(currentUserId, book);
+
+        if (repo.existsByBookIdAndIsActiveTrue(book.getId())) {
+            throw new DuplicateActiveListingException(book.getId());
+        }
 
         var type = fetchTypeOrThrow(dto.typeId());
+
+        if ("LEND".equals(type.getCode()) && dto.rentalDays() == null) {
+            throw new InvalidListingException("rentalDays is required for LEND listings");
+        }
+
+        if (dto.price() != null && dto.price().signum() < 0) {
+            throw new InvalidListingException("price cannot be negative");
+        }
 
         var entity = mapper.fromCreate(dto, book, type);
         repo.save(entity);
@@ -42,16 +55,24 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ListingSummaryResponse> list() {
-        return repo.findByIsDeletedFalse().stream()
+    public List<ListingSummaryResponse> listMine(Long currentUserId) {
+        return repo.findByBookOwnerIdAndIsDeletedFalse(currentUserId).stream()
+                .map(mapper::toSummary)
+                .toList();
+    }
+
+    @Override
+    public List<ListingSummaryResponse> listByBook(Long bookId) {
+        return repo.findByBookIdAndIsDeletedFalse(bookId)
+                .stream()
                 .map(mapper::toSummary)
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ListingSummaryResponse> list(Long bookOwnerId) {
-        return repo.findByBookOwnerIdAndIsDeletedFalse(bookOwnerId).stream()
+    public List<ListingSummaryResponse> list() {
+        return repo.findByIsDeletedFalse().stream()
                 .map(mapper::toSummary)
                 .toList();
     }
@@ -94,6 +115,7 @@ public class ListingServiceImpl implements ListingService {
         entity.setDeletedBy(fetchUserOrThrow(currentUserId).getEmail());
         entity.setDeletedAt(LocalDateTime.now());
         entity.setIsDeleted(true);
+        entity.setIsActive(false);
     }
 
     @Override
@@ -131,8 +153,9 @@ public class ListingServiceImpl implements ListingService {
     }
 
     private void checkDeletePermission(Long ownerId, Long currentUserId) {
-        if (!fetchUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN") && !ownerId.equals(currentUserId))
-            throw new AccessDeniedException("You don't have enough authorities to delete this user");
-
+        boolean isAdmin = "ADMIN".equals(fetchUserOrThrow(currentUserId).getRole().getCode());
+        if (!isAdmin && !ownerId.equals(currentUserId)) {
+            throw new AccessDeniedException("You don't have enough authority to delete this listing");
+        }
     }
 }

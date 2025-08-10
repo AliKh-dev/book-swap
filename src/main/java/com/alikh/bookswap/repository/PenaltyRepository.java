@@ -13,4 +13,6 @@ public interface PenaltyRepository extends JpaRepository<Penalty, Long> {
     List<Penalty> findByIsDeletedFalse();
 
     Optional<Penalty> findByIdAndIsDeletedFalse(Long id);
+
+    boolean existsByRequestId(Long requestId);
 }

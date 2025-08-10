@@ -49,9 +49,15 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public Role get(Integer id) {
+        return roleRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Role", id));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public RoleDetailResponse get(Integer id, int page) {
-        var role = fetchRoleOrThrow(id);
+        var role = get(id);
 
         Page<AppUser> users = userRepo.findByRole(
                 role, PageRequest.of(page, PAGE_SIZE, Sort.by("id").ascending()));
@@ -61,7 +67,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public RoleSummaryResponse update(Integer id, RoleUpdateRequest dto) {
-        var entity = fetchRoleOrThrow(id);
+        var entity = get(id);
         checkCodeUniquenessOrThrow(dto.code());
         mapper.applyUpdate(entity, dto);
         return mapper.toSummary(entity);
@@ -69,7 +75,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public RoleSummaryResponse patch(Integer id, RolePatchRequest dto) {
-        var entity = fetchRoleOrThrow(id);
+        var entity = get(id);
         if (dto.code() != null)
             checkCodeUniquenessOrThrow(dto.code());
         mapper.applyPatch(entity, dto);
@@ -78,13 +84,8 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public void delete(Integer id) {
-        fetchRoleOrThrow(id);
+        get(id);
         roleRepo.deleteById(id);
-    }
-
-    private Role fetchRoleOrThrow(Integer id) {
-        return roleRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Role", id));
     }
 
     private void checkCodeUniquenessOrThrow(String dto) {

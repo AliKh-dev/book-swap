@@ -18,36 +18,42 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 
 @RestController
-@RequestMapping("/books")
 @RequiredArgsConstructor
 public class BookController {
 
     private final BookService service;
 
-    @PostMapping
+    @PostMapping("/books")
     public ResponseEntity<BookSummaryResponse> create(
             UriComponentsBuilder uriBuilder,
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid BookCreateRequest dto
     ) {
         var response = service.create(dto, jwt.getUserId());
-        var uri = uriBuilder.path("api/books/{id}").buildAndExpand(response.id()).toUri();
+        var uri = uriBuilder.path("/api/books/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
     }
 
-    @GetMapping
+    @GetMapping("/me/books")
+    public ResponseEntity<List<BookSummaryResponse>> listMine(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.listMine(jwt.getUserId()));
+    }
+
+    @GetMapping("/books")
     public ResponseEntity<List<BookSummaryResponse>> list(
             @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(service.list(jwt.getUserId()));
+        return ResponseEntity.ok(service.list());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/books/{id}")
     public ResponseEntity<BookDetailResponse> get(@PathVariable Long id) {
         return ResponseEntity.ok(service.get(id));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/books/{id}")
     public ResponseEntity<BookSummaryResponse> update(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt,
@@ -56,7 +62,7 @@ public class BookController {
         return ResponseEntity.ok(service.update(id, dto, jwt.getUserId()));
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/books/{id}")
     public ResponseEntity<BookSummaryResponse> patch(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt,
@@ -65,21 +71,16 @@ public class BookController {
         return ResponseEntity.ok(service.patch(id, dto, jwt.getUserId()));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDelete(
+    @DeleteMapping("/books/{id}")
+    public ResponseEntity<Void> delete(
             @PathVariable Long id,
+            @RequestParam(required = false) boolean hard,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        service.softDelete(id, jwt.getUserId());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/hard-delete/{id}")
-    public ResponseEntity<Void> hardDelete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
-        service.hardDelete(id, jwt.getUserId());
+        if (hard)
+            service.hardDelete(id, jwt.getUserId());
+        else
+            service.softDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

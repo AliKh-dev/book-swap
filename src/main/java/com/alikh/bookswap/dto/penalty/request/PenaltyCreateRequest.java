@@ -6,9 +6,6 @@ import java.math.BigDecimal;
 
 public record PenaltyCreateRequest(
         @NotNull
-        Long requestId,      // FK to BorrowRequest
-
-        @NotNull
         Integer typeId,      // FK to PenaltyType
 
         @PositiveOrZero

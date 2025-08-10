@@ -7,9 +7,8 @@ import com.alikh.bookswap.dto.auth.response.LoginResponse;
 import com.alikh.bookswap.dto.auth.response.RefreshResponse;
 import com.alikh.bookswap.dto.auth.response.RegisterResponse;
 import com.alikh.bookswap.dto.user.request.UserChangePasswordRequest;
-import com.alikh.bookswap.dto.user.request.UserCreateRequest;
-import com.alikh.bookswap.dto.user.request.UserLoginRequest;
-import com.alikh.bookswap.entity.AppUser;
+import com.alikh.bookswap.exception.InvalidTokenException;
+import com.alikh.bookswap.exception.TokenExpiredException;
 import com.alikh.bookswap.exception.UnauthorizedException;
 import com.alikh.bookswap.service.contract.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,17 +24,12 @@ public class AuthService {
     private final JwtService jwtService;
 
     public RegisterResponse register(RegisterRequest request) {
-        var user = new UserCreateRequest(
-                request.email(),
-                request.password(),
-                request.name()
-        );
-
+        var user = request.toUserCreateRequest();
         return RegisterResponse.from(userService.create(user));
     }
 
     public LoginResponse login(LoginRequest request) {
-        AppUser user = userService.authenticate(UserLoginRequest.from(request));
+        var user = userService.authenticate(request.toUserLoginRequest());
 
         var accessToken = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
@@ -50,12 +44,17 @@ public class AuthService {
     }
 
     public RefreshResponse refreshAccessToken(String token) {
-        var jwt = jwtService.parse(token);
-        if (jwt == null || jwt.isExpired()) {
-            throw new UnauthorizedException("Token is invalid");
+        Jwt jwt;
+        try {
+            jwt = jwtService.parse(token);
+            if (jwt.isExpired()) {
+                throw new TokenExpiredException();
+            }
+        } catch (InvalidTokenException | TokenExpiredException ex) {
+            throw new UnauthorizedException("Refresh token is invalid or expired");
         }
 
-        AppUser user = userService.getEntity(jwt.getUserId());
+        var user = userService.fetch(jwt.getUserId());
 
         Jwt accessToken = jwtService.generateAccessToken(user);
         Jwt refreshToken = jwtService.generateRefreshToken(user);

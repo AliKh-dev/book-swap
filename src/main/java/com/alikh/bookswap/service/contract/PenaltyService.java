@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface PenaltyService {
 
-    PenaltySummaryResponse create(PenaltyCreateRequest dto);
+    PenaltySummaryResponse create(PenaltyCreateRequest dto, Long reqId);
 
     List<PenaltySummaryResponse> list();
 

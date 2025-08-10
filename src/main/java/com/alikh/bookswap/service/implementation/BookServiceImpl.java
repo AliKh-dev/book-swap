@@ -21,10 +21,10 @@ import java.util.List;
 @Transactional
 public class BookServiceImpl implements BookService {
 
-    private final BookRepository bookRepo;
+    private final BookRepository repo;
+    private final BookMapper mapper;
     private final UserRepository userRepo;
     private final BookConditionRepository conditionRepo;
-    private final BookMapper mapper;
 
     @Override
     public BookSummaryResponse create(BookCreateRequest dto, Long ownerId) {
@@ -32,14 +32,22 @@ public class BookServiceImpl implements BookService {
         var owner = fetchUserOrThrow(ownerId);
 
         Book entity = mapper.fromCreate(dto, condition, owner);
-        bookRepo.save(entity);
+        repo.save(entity);
         return mapper.toSummary(entity);
     }
 
     @Override
+    @Transactional
+    public List<BookSummaryResponse> list() {
+        return repo.findByIsDeletedFalse().stream()
+                .map(mapper::toSummary)
+                .toList();
+    }
+
+    @Override
     @Transactional(readOnly = true)
-    public List<BookSummaryResponse> list(Long ownerId) {
-        return bookRepo.findByOwnerIdAndIsDeletedFalse(ownerId).stream()
+    public List<BookSummaryResponse> listMine(Long ownerId) {
+        return repo.findByOwnerIdAndIsDeletedFalse(ownerId).stream()
                 .map(mapper::toSummary)
                 .toList();
     }
@@ -86,14 +94,14 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public void hardDelete(Long id, Long currentUserId) {
-        var book = bookRepo.findById(id)
+        var book = repo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Book", id));
         checkBookOwnerOrThrow(currentUserId, book);
-        bookRepo.deleteById(id);
+        repo.deleteById(id);
     }
 
     private Book fetchActiveBookOrThrow(Long id) {
-        return bookRepo.findByIdAndIsDeletedFalse(id)
+        return repo.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Book", id));
     }
 
@@ -108,8 +116,12 @@ public class BookServiceImpl implements BookService {
     }
 
     private void checkBookOwnerOrThrow(Long currentUserId, Book book) {
-        if (!book.getOwner().getId().equals(currentUserId)) {
-            throw new AccessDeniedException("This book does not belong to you.");
+        boolean isOwner = book.getOwner().getId().equals(currentUserId);
+        boolean isAdmin = fetchUserOrThrow(currentUserId)
+                .getRole().getCode().equals("ADMIN");
+
+        if (!isOwner && !isAdmin) {
+            throw new AccessDeniedException("You do not own this book");
         }
     }
 }

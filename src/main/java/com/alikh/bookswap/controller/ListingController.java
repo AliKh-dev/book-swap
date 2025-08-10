@@ -11,41 +11,56 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/listings")
 @RequiredArgsConstructor
 public class ListingController {
 
     private final ListingService service;
 
-    @PostMapping
+    @PostMapping("/books/{bookId}/listings")
     public ResponseEntity<ListingSummaryResponse> create(
             UriComponentsBuilder uriBuilder,
-            @RequestBody @Valid ListingCreateRequest request,
+            @PathVariable Long bookId,
+            @RequestBody @Valid ListingCreateRequest body,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        var response = service.create(request, jwt.getUserId());
+        var response = service.create(body, bookId, jwt.getUserId());
         var uri = uriBuilder.path("/api/listings/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
     }
 
-    @GetMapping
-    public ResponseEntity<List<ListingSummaryResponse>> list() {
+    @GetMapping("/me/listings")
+    public ResponseEntity<List<ListingSummaryResponse>> listMine(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.listMine(jwt.getUserId()));
+    }
+
+    @GetMapping("/books/{bookId}/listings")
+    public ResponseEntity<List<ListingSummaryResponse>> listByBook(
+            @PathVariable Long bookId
+    ) {
+        return ResponseEntity.ok(service.listByBook(bookId));
+    }
+
+    @GetMapping("/listings")
+    public ResponseEntity<List<ListingSummaryResponse>> listAll() {
         return ResponseEntity.ok(service.list());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ListingDetailResponse> get(@PathVariable Long id) {
+    @GetMapping("/listings/{id}")
+    public ResponseEntity<ListingDetailResponse> get(
+            @PathVariable Long id
+    ) {
         return ResponseEntity.ok(service.get(id));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/listings/{id}")
     public ResponseEntity<ListingSummaryResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid ListingUpdateRequest request,
@@ -54,7 +69,7 @@ public class ListingController {
         return ResponseEntity.ok(service.update(id, request, jwt.getUserId()));
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/listings/{id}")
     public ResponseEntity<ListingSummaryResponse> patch(
             @PathVariable Long id,
             @RequestBody ListingPatchRequest request,
@@ -63,21 +78,16 @@ public class ListingController {
         return ResponseEntity.ok(service.patch(id, request, jwt.getUserId()));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDelete(
+    @DeleteMapping("/listings/{id}")
+    public ResponseEntity<Void> delete(
             @PathVariable Long id,
+            @RequestParam(required = false) boolean hard,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        service.softDelete(id, jwt.getUserId());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/hard-delete/{id}")
-    public ResponseEntity<Void> hardDelete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
-        service.hardDelete(id, jwt.getUserId());
+        if (hard)
+            service.hardDelete(id, jwt.getUserId());
+        else
+            service.softDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

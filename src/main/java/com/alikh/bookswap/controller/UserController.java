@@ -51,7 +51,7 @@ public class UserController {
         return ResponseEntity.ok(service.patch(id, dto));
     }
 
-    @PutMapping("/change-role/{id}")
+    @PutMapping("/{id}/role")
     public ResponseEntity<UserSummaryResponse> changeRole(
             @PathVariable Long id,
             @RequestBody @Valid UserRoleChangeRequest dto
@@ -60,20 +60,15 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDelete(
+    public ResponseEntity<Void> delete(
             @PathVariable Long id,
+            @RequestParam(name = "hard",required = false) boolean hard,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        service.softDelete(id, jwt.getUserId());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/hard-delete/{id}")
-    public ResponseEntity<Void> hardDelete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
-        service.hardDeleted(id, jwt.getUserId());
+        if (hard)
+            service.hardDeleted(id, jwt.getUserId());
+        else
+            service.softDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

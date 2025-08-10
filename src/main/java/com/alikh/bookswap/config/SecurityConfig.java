@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh").permitAll()
+                        .requestMatchers("/api/auth/change-password", "/api/auth/logout").authenticated()
 
                         // ── book catalogue (read-only) ─────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()

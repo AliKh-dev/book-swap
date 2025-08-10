@@ -42,7 +42,7 @@ public class UserMapper {
     public AppUser fromCreate(UserCreateRequest request, Role role, String hashedPassword) {
         return AppUser.builder()
                 .email(request.email())
-                .password(hashedPassword)   // hash provided by service
+                .password(hashedPassword)
                 .name(request.name())
                 .role(role)
                 .build();

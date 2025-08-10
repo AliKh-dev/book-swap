@@ -4,6 +4,7 @@ import com.alikh.bookswap.entity.Listing;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,5 +15,9 @@ public interface ListingRepository extends JpaRepository<Listing, Long> {
 
     List<Listing> findByBookOwnerIdAndIsDeletedFalse(Long bookOwnerId);
 
+    List<Listing> findByBookIdAndIsDeletedFalse(Long bookId);
+
     Optional<Listing> findByIdAndIsDeletedFalse(Long id);
+
+    boolean existsByBookIdAndIsActiveTrue(Long bookId);
 }

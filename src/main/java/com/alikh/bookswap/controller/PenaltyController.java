@@ -14,34 +14,35 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 
 @RestController
-@RequestMapping("/penalties")
 @RequiredArgsConstructor
 public class PenaltyController {
 
     private final PenaltyService service;
 
-    @PostMapping
+    @PostMapping("/borrow-requests/{reqId}/penalties")
     public ResponseEntity<PenaltySummaryResponse> create(
             UriComponentsBuilder uriBuilder,
-            @RequestBody @Valid PenaltyCreateRequest dto
+            @PathVariable Long reqId,
+            @RequestBody @Valid PenaltyCreateRequest body
     ) {
-        var response = service.create(dto);
-        var uri = uriBuilder.path("api/penalties/{id}").buildAndExpand(response.id()).toUri();
+        var response = service.create(body, reqId);
+        var uri = uriBuilder.path("api/penalties/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
         return ResponseEntity.created(uri).body(response);
     }
 
-    @GetMapping
+    @GetMapping("/penalties")
     public ResponseEntity<List<PenaltySummaryResponse>> list() {
         return ResponseEntity.ok(service.list());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/penalties/{id}")
     public ResponseEntity<PenaltyDetailResponse> get(@PathVariable Long id) {
         return ResponseEntity.ok(service.get(id));
     }
 
-    // TODO: for rest of methods admin privileges required
-    @PutMapping("/{id}")
+    @PutMapping("/penalties/{id}")
     public ResponseEntity<PenaltySummaryResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid PenaltyUpdateRequest dto,
@@ -50,7 +51,7 @@ public class PenaltyController {
         return ResponseEntity.ok(service.update(id, dto, jwt.getUserId()));
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/penalties/{id}")
     public ResponseEntity<PenaltySummaryResponse> patch(
             @PathVariable Long id,
             @RequestBody @Valid PenaltyPatchRequest dto,
@@ -59,21 +60,16 @@ public class PenaltyController {
         return ResponseEntity.ok(service.patch(id, dto, jwt.getUserId()));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDelete(
+    @DeleteMapping("/penalties/{id}")
+    public ResponseEntity<Void> delete(
             @PathVariable Long id,
+            @RequestParam(required = false) boolean hard,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        service.softDelete(id, jwt.getUserId());
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/hard-delete/{id}")
-    public ResponseEntity<Void> hardDelete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
-        service.hardDelete(id, jwt.getUserId());
+        if (hard)
+            service.hardDelete(id, jwt.getUserId());
+        else
+            service.softDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

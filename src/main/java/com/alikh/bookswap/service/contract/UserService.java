@@ -8,13 +8,15 @@ import com.alikh.bookswap.entity.AppUser;
 import java.util.List;
 
 public interface UserService {
-    UserSummaryResponse create(UserCreateRequest dto);
+    AppUser create(UserCreateRequest dto);
+
+    AppUser fetch(Long id);
+
+    AppUser fetch(String email);
 
     AppUser authenticate(UserLoginRequest dto);
 
     void changePassword(UserChangePasswordRequest dto);
-
-    AppUser getEntity(Long id);
 
     UserDetailResponse get(Long id);
 

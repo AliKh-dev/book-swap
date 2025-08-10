@@ -27,7 +27,7 @@ public class Listing extends SoftDeletableEntity{
     private Integer rentalDays;
 
     @Column(name = "is_active")
-    private Boolean isActive = true;
+    private Boolean isActive;
 
 
     // Virtual Column

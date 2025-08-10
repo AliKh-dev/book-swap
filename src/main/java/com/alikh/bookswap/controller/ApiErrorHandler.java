@@ -25,6 +25,36 @@ public class ApiErrorHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
+    @ExceptionHandler(DuplicateActiveListingException.class)
+    public ResponseEntity<ApiError> handleDuplicateListing(DuplicateActiveListingException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("DUPLICATE_ACTIVE_LISTING", ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(DuplicateApprovedBorrowRequestException.class)
+    public ResponseEntity<ApiError> handleDupApproved(DuplicateApprovedBorrowRequestException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("DUPLICATE_APPROVED_BORROW_REQUEST", ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(InvalidListingException.class)
+    public ResponseEntity<ApiError> handleInvalidListing(InvalidListingException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new ApiError("INVALID_LISTING", ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    public ResponseEntity<ApiError> handleInvalidTransition(InvalidStatusTransitionException ex) {
+        return ResponseEntity.unprocessableEntity()
+                .body(new ApiError("INVALID_STATUS_TRANSITION", ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(DuplicatePenaltyException.class)
+    public ResponseEntity<ApiError> handleDupPenalty(DuplicatePenaltyException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("DUPLICATE_PENALTY", ex.getMessage(), null));
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiError> handleNotFoundException(NotFoundException ex) {
         ApiError body = new ApiError(
@@ -96,5 +126,14 @@ public class ApiErrorHandler {
                 errors
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleGeneric(Exception ex) {
+        // TODO: I should consider logging ex here with a logger
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiError("INTERNAL_SERVER_ERROR",
+                        "Unexpected error, please contact support",
+                        null));
     }
 }

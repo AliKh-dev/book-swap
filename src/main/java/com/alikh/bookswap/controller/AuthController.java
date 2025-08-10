@@ -7,6 +7,7 @@ import com.alikh.bookswap.dto.auth.request.RegisterRequest;
 import com.alikh.bookswap.dto.auth.response.LoginResponse;
 import com.alikh.bookswap.dto.auth.response.RefreshResponse;
 import com.alikh.bookswap.dto.auth.response.RegisterResponse;
+import com.alikh.bookswap.exception.UnauthorizedException;
 import com.alikh.bookswap.service.AuthService;
 import com.alikh.bookswap.service.Jwt;
 import jakarta.servlet.http.Cookie;
@@ -16,7 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/auth")
@@ -28,18 +30,19 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(
-            UriComponentsBuilder uriBuilder,
-            @Valid @RequestBody RegisterRequest request) {
-        var response = service.register(request);
-        var uri = uriBuilder.path("/api/users/{id}").buildAndExpand(response.id()).toUri();
-        return ResponseEntity.created(uri).body(response);
+            @Valid @RequestBody RegisterRequest body
+    ) {
+        var response = service.register(body);
+        var location = URI.create("/api/users/" + response.id());
+        return ResponseEntity.created(location).body(response);
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
-            @Valid @RequestBody LoginRequest request,
-            HttpServletResponse response) {
-        var result = service.login(request);
+            @Valid @RequestBody LoginRequest body,
+            HttpServletResponse response
+    ) {
+        var result = service.login(body);
         response.addCookie(buildRefreshTokenCookie(result.refreshToken()));
         return ResponseEntity.ok(
                 new LoginResponse(
@@ -54,11 +57,14 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<RefreshResponse> refresh(
-            @CookieValue(name = "refreshToken") String refreshToken,
-            HttpServletResponse response) {
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response
+    ) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new UnauthorizedException("Refresh token is missing");
+        }
 
         var result = service.refreshAccessToken(refreshToken);
-
         response.addCookie(buildRefreshTokenCookie(result.newRefreshToken()));
 
         return ResponseEntity.ok(
@@ -72,8 +78,8 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @AuthenticationPrincipal Jwt jwt,
-            HttpServletResponse response) {
+            HttpServletResponse response
+    ) {
         clearRefreshToken(response);
         return ResponseEntity.noContent().build();
     }
@@ -81,8 +87,8 @@ public class AuthController {
     @PatchMapping("/change-password")
     public ResponseEntity<Void> changePassword(
             @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody ChangePasswordRequest request) {
-
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
         service.changePassword(jwt, request);
         return ResponseEntity.noContent().build();
     }
