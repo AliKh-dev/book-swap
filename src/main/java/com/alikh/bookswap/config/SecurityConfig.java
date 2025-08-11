@@ -31,43 +31,35 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
-                // ───────────────────────────────────────────────────────────────
-                // Authorisation rules
-                // ───────────────────────────────────────────────────────────────
                 .authorizeHttpRequests(auth -> auth
-                        // ── public docs / health ───────────────────────────────
                         .requestMatchers(
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-                                "/actuator/health").permitAll()
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/actuator/**").permitAll()
 
-                        // ── auth endpoints ─────────────────────────────────────
-                        .requestMatchers("/api/auth/register",
+                        .requestMatchers(
+                                "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh").permitAll()
-                        .requestMatchers("/api/auth/change-password", "/api/auth/logout").authenticated()
+                        .requestMatchers(
+                                "/api/auth/change-password",
+                                "/api/auth/logout").authenticated()
 
-                        // ── book catalogue (read-only) ─────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
 
-                        // ── book mutate operations – must be logged-in ─────────
                         .requestMatchers("/api/books/**").authenticated()
 
-                        // ── “me” resources ─────────────────────────────────────
                         .requestMatchers("/api/me/**").authenticated()
 
-                        // ── admin area ─────────────────────────────────────────
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // ── everything else is closed by default ───────────────
                         .anyRequest().denyAll()
                 );
 
         return http.build();
     }
 
-    // ───────────────────────────────────────────────────────────────
-    // Beans
-    // ───────────────────────────────────────────────────────────────
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

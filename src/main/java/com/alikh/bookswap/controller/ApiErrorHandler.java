@@ -128,9 +128,9 @@ public class ApiErrorHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    // TODO: I should consider logging ex here with a logger
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
-        // TODO: I should consider logging ex here with a logger
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiError("INTERNAL_SERVER_ERROR",
                         "Unexpected error, please contact support",
