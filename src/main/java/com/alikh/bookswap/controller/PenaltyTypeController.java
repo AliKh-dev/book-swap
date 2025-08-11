@@ -12,7 +12,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 
 @RestController
-@RequestMapping("/penalty-types")
+@RequestMapping("/api/penalty-types")
 @RequiredArgsConstructor
 public class PenaltyTypeController {
 

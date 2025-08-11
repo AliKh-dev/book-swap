@@ -15,7 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 
 @RestController
-@RequestMapping("/request-statuses")
+@RequestMapping("/api/request-statuses")
 @RequiredArgsConstructor
 public class RequestStatusController {
 

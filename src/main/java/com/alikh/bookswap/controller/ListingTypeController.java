@@ -15,7 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 
 @RestController
-@RequestMapping("/listing-types")
+@RequestMapping("/api/listing-types")
 @RequiredArgsConstructor
 public class ListingTypeController {
 
