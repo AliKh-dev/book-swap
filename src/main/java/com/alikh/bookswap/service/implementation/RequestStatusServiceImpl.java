@@ -3,8 +3,8 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.requeststatus.request.*;
 import com.alikh.bookswap.dto.requeststatus.response.*;
 import com.alikh.bookswap.entity.RequestStatus;
-import com.alikh.bookswap.exception.CodeAlreadyExistsException;
-import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.DuplicateCodeException;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.RequestStatusMapper;
 import com.alikh.bookswap.repository.RequestStatusRepository;
 import com.alikh.bookswap.service.contract.RequestStatusService;
@@ -73,11 +73,11 @@ public class RequestStatusServiceImpl implements RequestStatusService {
 
     private RequestStatus fetchRequestStatusOrThrow(Integer id) {
         return repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("RequestStatus", id));
+                .orElseThrow(() -> new NotFoundException("RequestStatus with id=" + id + "not found"));
     }
 
     private void checkCodeUniquenessOrThrow(String dto) {
         if (repo.existsByCode(dto))
-            throw new CodeAlreadyExistsException("RequestStatus", dto);
+            throw new DuplicateCodeException("RequestStatus", dto);
     }
 }

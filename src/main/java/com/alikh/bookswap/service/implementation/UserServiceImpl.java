@@ -5,6 +5,7 @@ import com.alikh.bookswap.dto.user.response.UserDetailResponse;
 import com.alikh.bookswap.dto.user.response.UserSummaryResponse;
 import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.exception.*;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.UserMapper;
 import com.alikh.bookswap.repository.UserRepository;
 import com.alikh.bookswap.service.contract.RoleService;
@@ -41,12 +42,12 @@ public class UserServiceImpl implements UserService {
 
     public AppUser fetch(Long id) {
         return repo.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("User", id));
+                .orElseThrow(() -> new NotFoundException("User with id=" + id + "not found"));
     }
 
     public AppUser fetch(String email) {
         return repo.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("User", email));
+                .orElseThrow(() -> new NotFoundException("User with email=" + email + "not found"));
     }
 
     @Override
@@ -122,7 +123,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void hardDeleted(Long id, Long currentUserId) {
         if (!repo.existsById(id)) {
-            throw new NotFoundException("User", id);
+            throw new NotFoundException("User with id=" + id + "not found");
         }
         checkDeletePermission(id, currentUserId);
 
@@ -131,12 +132,12 @@ public class UserServiceImpl implements UserService {
 
     private void checkEmailUniquenessOrThrow(String email) {
         if (repo.existsByEmail(email))
-            throw new EmailAlreadyExistsException(email);
+            throw new DuplicateEmailException(email);
     }
 
     private void verifyPassword(String rawPassword, String hashedPassword) {
         if (!passwordEncoder.matches(rawPassword, hashedPassword)) {
-            throw new BadCredentialsException("Invalid email or password");
+            throw new BadCredentialsException();
         }
     }
 

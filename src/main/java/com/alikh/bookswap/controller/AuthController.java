@@ -7,7 +7,7 @@ import com.alikh.bookswap.dto.auth.request.RegisterRequest;
 import com.alikh.bookswap.dto.auth.response.LoginResponse;
 import com.alikh.bookswap.dto.auth.response.RefreshResponse;
 import com.alikh.bookswap.dto.auth.response.RegisterResponse;
-import com.alikh.bookswap.exception.UnauthorizedException;
+import com.alikh.bookswap.exception.RefreshTokenMissingException;
 import com.alikh.bookswap.service.AuthService;
 import com.alikh.bookswap.service.Jwt;
 import jakarta.servlet.http.Cookie;
@@ -61,7 +61,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new UnauthorizedException("Refresh token is missing");
+            throw new RefreshTokenMissingException();
         }
 
         var result = service.refreshAccessToken(refreshToken);

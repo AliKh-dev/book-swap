@@ -1,8 +1,10 @@
 package com.alikh.bookswap.exception;
 
-import io.jsonwebtoken.JwtException;
+import com.alikh.bookswap.exception.parents.AuthenticationException;
 
-public class InvalidTokenException extends RuntimeException {
-    public InvalidTokenException(String invalidJwt, JwtException exception) {
+public class InvalidTokenException extends AuthenticationException {
+
+    public InvalidTokenException() {
+        super("INVALID_TOKEN", "Token is invalid");
     }
 }

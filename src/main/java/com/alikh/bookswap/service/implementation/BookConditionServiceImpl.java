@@ -3,8 +3,8 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.bookcondition.request.*;
 import com.alikh.bookswap.dto.bookcondition.response.*;
 import com.alikh.bookswap.entity.BookCondition;
-import com.alikh.bookswap.exception.CodeAlreadyExistsException;
-import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.DuplicateCodeException;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.BookConditionMapper;
 import com.alikh.bookswap.repository.BookConditionRepository;
 import com.alikh.bookswap.service.contract.BookConditionService;
@@ -73,11 +73,11 @@ public class BookConditionServiceImpl implements BookConditionService {
 
     private BookCondition fetchBookConditionOrThrow(Integer id) {
         return repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BookCondition", id));
+                .orElseThrow(() -> new NotFoundException("BookCondition with id=" + id + "not found"));
     }
 
     private void checkCodeUniquenessOrThrow(String code) {
         if (repo.existsByCode(code))
-            throw new CodeAlreadyExistsException("BookCondition", code);
+            throw new DuplicateCodeException("BookCondition", code);
     }
 }

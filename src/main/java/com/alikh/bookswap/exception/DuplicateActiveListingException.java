@@ -1,12 +1,10 @@
 package com.alikh.bookswap.exception;
 
-/**
- * Thrown when a user tries to create a second active listing
- * for the same book (business rule, unique constraint UQ_ACTIVE_LISTING).
- */
-public class DuplicateActiveListingException extends RuntimeException {
+import com.alikh.bookswap.exception.parents.ConflictException;
+
+public class DuplicateActiveListingException extends ConflictException {
 
     public DuplicateActiveListingException(Long bookId) {
-        super("Book " + bookId + " already has an active listing");
+        super("DUPLICATE_ACTIVE_LISTING", "Book " + bookId + " already has an active listing");
     }
 }

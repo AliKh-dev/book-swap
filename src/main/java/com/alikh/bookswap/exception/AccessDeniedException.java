@@ -1,7 +1,10 @@
 package com.alikh.bookswap.exception;
 
-public class AccessDeniedException extends RuntimeException {
+import com.alikh.bookswap.exception.parents.AuthorizationException;
+
+public class AccessDeniedException extends AuthorizationException {
+
     public AccessDeniedException(String message) {
-        super(message);
+        super("ACCESS_DENIED", message);
     }
 }

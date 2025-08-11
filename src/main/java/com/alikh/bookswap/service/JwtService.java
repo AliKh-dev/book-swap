@@ -51,7 +51,7 @@ public class JwtService {
             var claims = getClaims(token);
             return new Jwt(claims, secretKey);
         } catch (JwtException exception) {
-            throw new InvalidTokenException("Invalid JWT", exception);
+            throw new InvalidTokenException();
         }
     }
 

@@ -4,11 +4,12 @@ import com.alikh.bookswap.dto.book.request.*;
 import com.alikh.bookswap.dto.book.response.*;
 import com.alikh.bookswap.entity.*;
 import com.alikh.bookswap.exception.AccessDeniedException;
-import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.BookMapper;
 import com.alikh.bookswap.repository.*;
 
 import com.alikh.bookswap.service.contract.BookService;
+import jakarta.persistence.Id;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,24 +96,24 @@ public class BookServiceImpl implements BookService {
     @Override
     public void hardDelete(Long id, Long currentUserId) {
         var book = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Book", id));
+                .orElseThrow(() -> new NotFoundException("Book with id=" + id + "not found"));
         checkBookOwnerOrThrow(currentUserId, book);
         repo.deleteById(id);
     }
 
     private Book fetchActiveBookOrThrow(Long id) {
         return repo.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Book", id));
+                .orElseThrow(() -> new NotFoundException("Book with id=" + id + "not found"));
     }
 
     private BookCondition fetchBookConditionOrThrow(Integer id) {
         return conditionRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BookCondition", id));
+                .orElseThrow(() -> new NotFoundException("BookCondition with id=" + id + "not found"));
     }
 
     private AppUser fetchUserOrThrow(Long ownerId) {
         return userRepo.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("User", ownerId));
+                .orElseThrow(() -> new NotFoundException("User with id=" + ownerId + "not found"));
     }
 
     private void checkBookOwnerOrThrow(Long currentUserId, Book book) {

@@ -4,8 +4,8 @@ import com.alikh.bookswap.dto.role.request.*;
 import com.alikh.bookswap.dto.role.response.*;
 import com.alikh.bookswap.entity.AppUser;
 import com.alikh.bookswap.entity.Role;
-import com.alikh.bookswap.exception.CodeAlreadyExistsException;
-import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.DuplicateCodeException;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.RoleMapper;
 import com.alikh.bookswap.repository.UserRepository;
 import com.alikh.bookswap.repository.RoleRepository;
@@ -51,7 +51,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Role get(Integer id) {
         return roleRepo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Role", id));
+                .orElseThrow(() -> new NotFoundException("Role with id=" + id + "not found"));
     }
 
     @Override
@@ -90,6 +90,6 @@ public class RoleServiceImpl implements RoleService {
 
     private void checkCodeUniquenessOrThrow(String dto) {
         if (roleRepo.findByCode(dto).isPresent())
-            throw new CodeAlreadyExistsException("Role", dto);
+            throw new DuplicateCodeException("Role", dto);
     }
 }

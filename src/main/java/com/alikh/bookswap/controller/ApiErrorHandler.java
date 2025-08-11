@@ -1,139 +1,190 @@
 package com.alikh.bookswap.controller;
 
-import com.alikh.bookswap.dto.error.ApiError;
-import com.alikh.bookswap.exception.*;
+import com.alikh.bookswap.exception.parents.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.method.annotation.MethodArgumentConversionNotSupportedException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URI;
+import java.util.*;
 
+@Slf4j
 @RestControllerAdvice
 public class ApiErrorHandler {
 
-    @ExceptionHandler(TokenExpiredException.class)
-    public ResponseEntity<ApiError> handleTokenExpired(TokenExpiredException ex) {
-        var body = new ApiError(
-                "TOKEN_EXPIRED",
-                ex.getMessage(),
-                null
-        );
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-    }
-
-    @ExceptionHandler(DuplicateActiveListingException.class)
-    public ResponseEntity<ApiError> handleDuplicateListing(DuplicateActiveListingException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiError("DUPLICATE_ACTIVE_LISTING", ex.getMessage(), null));
-    }
-
-    @ExceptionHandler(DuplicateApprovedBorrowRequestException.class)
-    public ResponseEntity<ApiError> handleDupApproved(DuplicateApprovedBorrowRequestException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiError("DUPLICATE_APPROVED_BORROW_REQUEST", ex.getMessage(), null));
-    }
-
-    @ExceptionHandler(InvalidListingException.class)
-    public ResponseEntity<ApiError> handleInvalidListing(InvalidListingException ex) {
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(new ApiError("INVALID_LISTING", ex.getMessage(), null));
-    }
-
-    @ExceptionHandler(InvalidStatusTransitionException.class)
-    public ResponseEntity<ApiError> handleInvalidTransition(InvalidStatusTransitionException ex) {
-        return ResponseEntity.unprocessableEntity()
-                .body(new ApiError("INVALID_STATUS_TRANSITION", ex.getMessage(), null));
-    }
-
-    @ExceptionHandler(DuplicatePenaltyException.class)
-    public ResponseEntity<ApiError> handleDupPenalty(DuplicatePenaltyException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiError("DUPLICATE_PENALTY", ex.getMessage(), null));
-    }
-
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ApiError> handleNotFoundException(NotFoundException ex) {
-        ApiError body = new ApiError(
-                "NOT_FOUND",
-                ex.getMessage(),
-                null
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
-    }
-
-    @ExceptionHandler({CodeAlreadyExistsException.class, EmailAlreadyExistsException.class})
-    public ResponseEntity<ApiError> handleConflictExceptions(RuntimeException ex) {
-        String code = ex instanceof CodeAlreadyExistsException
-                ? "CODE_ALREADY_EXISTS"
-                : "EMAIL_ALREADY_EXISTS";
-        ApiError body = new ApiError(
-                code,
-                ex.getMessage(),
-                null
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
-    }
-
-    @ExceptionHandler(BorrowRequestStatusConflictException.class)
-    public ResponseEntity<ApiError> handleBorrowRequestStatusConflict(BorrowRequestStatusConflictException ex) {
-        ApiError body = new ApiError(
-                "BORROW_REQUEST_STATUS_CONFLICT",
-                ex.getMessage(),
-                null
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
-    }
-
-    @ExceptionHandler({AccessDeniedException.class, UnauthorizedException.class, UnauthorizedStatusChangeException.class})
-    public ResponseEntity<ApiError> handleForbiddenExceptions(RuntimeException ex) {
-        String code;
-        if (ex instanceof UnauthorizedStatusChangeException) {
-            code = "UNAUTHORIZED_STATUS_CHANGE";
-        } else {
-            code = "ACCESS_DENIED";
-        }
-        ApiError body = new ApiError(
-                code,
-                ex.getMessage(),
-                null
-        );
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
-    }
-
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ApiError> handleInvalidTokenException(InvalidTokenException ex) {
-        ApiError body = new ApiError(
-                "INVALID_TOKEN",
-                ex.getMessage(),
-                null
-        );
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
-    }
-
+    // 400 - Bean validation on @RequestBody DTOs
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            errors.put(error.getField(), error.getDefaultMessage());
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
+            errors.put(fe.getField(), Optional.ofNullable(fe.getDefaultMessage()).orElse("Invalid value"));
         }
-        var body = new ApiError(
+        log.warn("400 VALIDATION_FAILED {} -> {}", uri(req), errors);
+        return createProblemDetail(HttpStatus.BAD_REQUEST,
                 "VALIDATION_FAILED",
-                "One or more fields are invalid",
-                errors
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+                "Validation failed",
+                "One or more fields are invalid.",
+                req,
+                errors);
     }
 
-    // TODO: I should consider logging ex here with a logger
+    // 400 - Bean validation on query/path params (@Validated)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest req) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (ConstraintViolation<?> v : ex.getConstraintViolations()) {
+            errors.put(String.valueOf(v.getPropertyPath()),
+                    Optional.ofNullable(v.getMessage()).orElse("Invalid value"));
+        }
+        log.warn("400 CONSTRAINT_VIOLATION {} -> {}", uri(req), errors);
+        return createProblemDetail(HttpStatus.BAD_REQUEST,
+                "CONSTRAINT_VIOLATION",
+                "Constraint violation",
+                "Request parameters are invalid.",
+                req,
+                errors);
+    }
+
+    // 400 - Binding failures (e.g., type mismatch for @ModelAttribute / form)
+    @ExceptionHandler(BindException.class)
+    public ProblemDetail handleBind(BindException ex, HttpServletRequest req) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (FieldError fe : ex.getFieldErrors()) {
+            errors.put(fe.getField(), Optional.ofNullable(fe.getDefaultMessage()).orElse("Invalid value"));
+        }
+        log.warn("400 BINDING_FAILED {} -> {}", uri(req), errors);
+        return createProblemDetail(HttpStatus.BAD_REQUEST,
+                "BINDING_FAILED",
+                "Binding failed",
+                "Could not bind request parameters.",
+                req,
+                errors);
+    }
+
+    // 400 - Malformed JSON or unreadable payload
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleNotReadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
+        log.warn("400 PAYLOAD_NOT_READABLE {} -> {}", uri(req), safeMsg(ex));
+        return createProblemDetail(HttpStatus.BAD_REQUEST,
+                "PAYLOAD_NOT_READABLE",
+                "Malformed or unreadable payload",
+                "Request body is missing or malformed.",
+                req,
+                null);
+    }
+
+    // 405 - Wrong HTTP method
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ProblemDetail handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex, HttpServletRequest req) {
+        log.warn("405 METHOD_NOT_ALLOWED {} -> {}", uri(req), ex.getMethod());
+        return createProblemDetail(HttpStatus.METHOD_NOT_ALLOWED,
+                "METHOD_NOT_ALLOWED",
+                "Method not allowed",
+                "Unsupported HTTP method for this endpoint.",
+                req,
+                null);
+    }
+
+    // 400 - Type mismatch for path/query parameter
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, MethodArgumentConversionNotSupportedException.class})
+    public ProblemDetail handleTypeMismatch(Exception ex, HttpServletRequest req) {
+        log.warn("400 TYPE_MISMATCH {} -> {}", uri(req), safeMsg(ex));
+        return createProblemDetail(HttpStatus.BAD_REQUEST,
+                "TYPE_MISMATCH",
+                "Type mismatch",
+                "Provided argument has an invalid type.",
+                req,
+                null);
+    }
+
+    // 401 - Authentication problems
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleAuthentication(AuthenticationException ex, HttpServletRequest req) {
+        log.warn("401 AUTHENTICATION {} -> {}", uri(req), safeMsg(ex));
+        return createProblemDetail(ex.getStatus(), ex.getCode(), ex.getTitle(), ex.getMessage(), req, null);
+    }
+
+    // 403 - Authorization/permissions
+    @ExceptionHandler(AuthorizationException.class)
+    public ProblemDetail handleAuthorization(AuthorizationException ex, HttpServletRequest req) {
+        log.warn("403 AUTHORIZATION {} -> {}", uri(req), safeMsg(ex));
+        return createProblemDetail(ex.getStatus(), ex.getCode(), ex.getTitle(), ex.getMessage(), req, null);
+    }
+
+    // 404 - Resource not found
+    @ExceptionHandler(NotFoundException.class)
+    public ProblemDetail handleNotFound(NotFoundException ex, HttpServletRequest req) {
+        log.warn("404 NOT_FOUND {} -> {}", uri(req), safeMsg(ex));
+        return createProblemDetail(ex.getStatus(), ex.getCode(), ex.getTitle(), ex.getMessage(), req, null);
+    }
+
+    // 409 - State/data conflicts
+    @ExceptionHandler(ConflictException.class)
+    public ProblemDetail handleConflict(ConflictException ex, HttpServletRequest req) {
+        log.warn("409 CONFLICT {} -> {}", uri(req), safeMsg(ex));
+        return createProblemDetail(ex.getStatus(), ex.getCode(), ex.getTitle(), ex.getMessage(), req, null);
+    }
+
+    // 422 - Business rule violations
+    @ExceptionHandler(BusinessException.class)
+    public ProblemDetail handleBusiness(BusinessException ex, HttpServletRequest req) {
+        log.warn("422 BUSINESS {} -> {}", uri(req), safeMsg(ex));
+        return createProblemDetail(ex.getStatus(), ex.getCode(), ex.getTitle(), ex.getMessage(), req, null);
+    }
+
+
+    /* ====================== Fallback ====================== */
+
+    @ExceptionHandler(ApiException.class) // future parents / safety net
+    public ProblemDetail handleApi(ApiException ex, HttpServletRequest req) {
+        log.warn("{} API_EXCEPTION {} -> {}", ex.getStatus().value(), uri(req), safeMsg(ex));
+        return createProblemDetail(ex.getStatus(), ex.getCode(), ex.getTitle(), ex.getMessage(), req, null);
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGeneric(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiError("INTERNAL_SERVER_ERROR",
-                        "Unexpected error, please contact support",
-                        null));
+    public ProblemDetail handleUnknown(Exception ex, HttpServletRequest req) {
+        log.error("500 INTERNAL_ERROR {} -> {}", uri(req), safeMsg(ex), ex);
+        return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                "INTERNAL_ERROR",
+                "Internal server error",
+                "Unexpected error, please contact support.",
+                req,
+                null);
+    }
+
+
+    /* ====================== helper ====================== */
+
+    private ProblemDetail createProblemDetail(HttpStatus status, String code, String title, String detail,
+                                              HttpServletRequest req, Map<String, ?> errors) {
+        ProblemDetail problem = ProblemDetail.forStatus(status);
+        if (title != null) problem.setTitle(title);
+        if (detail != null) problem.setDetail(detail);
+        if (req != null) problem.setInstance(URI.create(req.getRequestURI()));
+        if (code != null) problem.setProperty("code", code);
+        if (errors != null && !errors.isEmpty()) problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    private String uri(HttpServletRequest req) {
+        return req != null ? req.getRequestURI() : "-";
+    }
+
+    private String safeMsg(Throwable ex) {
+        String msg = ex.getMessage();
+        if (msg == null || msg.isBlank()) return ex.getClass().getSimpleName();
+        return msg.length() > 300 ? msg.substring(0, 300) + "…" : msg;
     }
 }

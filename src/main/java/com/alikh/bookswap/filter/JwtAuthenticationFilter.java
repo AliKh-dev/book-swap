@@ -37,9 +37,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.replace("Bearer ", "");
         Jwt jwt = jwtService.parse(token);
-        if (jwt.isExpired()) {
+        if (jwt.isExpired())
             throw new TokenExpiredException();
-        }
 
         var authorities = List.of(
                 new SimpleGrantedAuthority("ROLE_" + jwt.getRoleCode())

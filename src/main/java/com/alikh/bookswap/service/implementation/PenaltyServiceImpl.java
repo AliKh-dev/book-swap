@@ -5,7 +5,7 @@ import com.alikh.bookswap.dto.penalty.response.*;
 import com.alikh.bookswap.entity.*;
 import com.alikh.bookswap.exception.AccessDeniedException;
 import com.alikh.bookswap.exception.DuplicatePenaltyException;
-import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.PenaltyMapper;
 import com.alikh.bookswap.repository.*;
 
@@ -110,22 +110,22 @@ public class PenaltyServiceImpl implements PenaltyService {
 
     private BorrowRequest fetchActiveRequestOrThrow(Long requestId) {
         return requestRepo.findByIdAndIsDeletedFalse(requestId)
-                .orElseThrow(() -> new NotFoundException("BorrowRequest", requestId));
+                .orElseThrow(() -> new NotFoundException("BorrowRequest with id=" + requestId + "not found"));
     }
 
     private PenaltyType fetchPenaltyTypeOrThrow(Integer typeId) {
         return typeRepo.findById(typeId)
-                .orElseThrow(() -> new NotFoundException("PenaltyType", typeId));
+                .orElseThrow(() -> new NotFoundException("PenaltyType with id=" + typeId + "not found"));
     }
 
     private Penalty fetchActivePenaltyOrThrow(Long id) {
         return repo.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Penalty", id));
+                .orElseThrow(() -> new NotFoundException("Penalty with id=" + id + "not found"));
     }
 
     private AppUser fetchActiveUserOrThrow(Long userId) {
         return userRepo.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User", userId));
+                .orElseThrow(() -> new NotFoundException("User with id=" + userId + "not found"));
     }
 
     private void checkDeletePermission(Long currentUserId) {

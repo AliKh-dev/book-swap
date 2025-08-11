@@ -1,6 +1,9 @@
 spring:
   application:
     name: book-swap
+  mvc:
+    problemdetails:
+        enabled: true
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}

@@ -1,8 +1,10 @@
 package com.alikh.bookswap.exception;
 
-public class BadCredentialsException extends UnauthorizedException {
+import com.alikh.bookswap.exception.parents.AuthenticationException;
 
-    public BadCredentialsException(String message) {
-        super(message);
+public class BadCredentialsException extends AuthenticationException {
+
+    public BadCredentialsException() {
+        super("BAD_CREDENTIALS", "Username or password is incorrect");
     }
 }

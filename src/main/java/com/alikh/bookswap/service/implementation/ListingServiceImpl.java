@@ -6,7 +6,7 @@ import com.alikh.bookswap.entity.*;
 import com.alikh.bookswap.exception.AccessDeniedException;
 import com.alikh.bookswap.exception.DuplicateActiveListingException;
 import com.alikh.bookswap.exception.InvalidListingException;
-import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.ListingMapper;
 import com.alikh.bookswap.repository.*;
 
@@ -121,29 +121,29 @@ public class ListingServiceImpl implements ListingService {
     @Override
     public void hardDelete(Long id, Long currentUserId) {
         var entity = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Listing", id));
+                .orElseThrow(() -> new NotFoundException("Listing with id=" + id + "not found"));
         checkDeletePermission(entity.getBook().getOwner().getId(), currentUserId);
         repo.deleteById(id);
     }
 
     private Book fetchBookOrThrow(Long bookId) {
         return bookRepo.findById(bookId)
-                .orElseThrow(() -> new NotFoundException("Book", bookId));
+                .orElseThrow(() -> new NotFoundException("Book with id=" + bookId + "not found"));
     }
 
     private ListingType fetchTypeOrThrow(Integer typeId) {
         return typeRepo.findById(typeId)
-                .orElseThrow(() -> new NotFoundException("ListingType", typeId));
+                .orElseThrow(() -> new NotFoundException("ListingType with id=" + typeId + "not found"));
     }
 
     private Listing fetchActiveListing(Long id) {
         return repo.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Listing", id));
+                .orElseThrow(() -> new NotFoundException("Listing with id=" + id + "not found"));
     }
 
     private AppUser fetchUserOrThrow(Long ownerId) {
         return userRepo.findById(ownerId)
-                .orElseThrow(() -> new NotFoundException("User", ownerId));
+                .orElseThrow(() -> new NotFoundException("User with id=" + ownerId + "not found"));
     }
 
     private void checkBookOwnerOrThrow(Long currentUserId, Book book) {

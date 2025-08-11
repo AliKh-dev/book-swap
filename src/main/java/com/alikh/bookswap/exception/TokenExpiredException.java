@@ -1,15 +1,9 @@
 package com.alikh.bookswap.exception;
 
-/**
- * Thrown when a JWT is syntactically valid but its exp claim is in the past.
- */
-public class TokenExpiredException extends RuntimeException {
+import com.alikh.bookswap.exception.parents.AuthenticationException;
 
+public class TokenExpiredException extends AuthenticationException {
     public TokenExpiredException() {
-        super("JWT has expired");
-    }
-
-    public TokenExpiredException(String message) {
-        super(message);
+        super("TOKEN_EXPIRED", "Token has expired");
     }
 }

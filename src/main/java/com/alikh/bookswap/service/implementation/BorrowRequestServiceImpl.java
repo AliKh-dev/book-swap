@@ -7,6 +7,7 @@ import com.alikh.bookswap.entity.BorrowRequest;
 import com.alikh.bookswap.entity.Listing;
 import com.alikh.bookswap.entity.RequestStatus;
 import com.alikh.bookswap.exception.*;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.BorrowRequestMapper;
 import com.alikh.bookswap.repository.BorrowRequestRepository;
 import com.alikh.bookswap.repository.ListingRepository;
@@ -146,22 +147,22 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
 
     private BorrowRequest fetchBorrowRequestOrThrow(Long id) {
         return repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("BorrowRequest", id));
+                .orElseThrow(() -> new NotFoundException("BorrowRequest with id=" + id + "not found"));
     }
 
     private RequestStatus fetchStatusOrThrow(Integer statusId) {
         return statusRepo.findById(statusId)
-                .orElseThrow(() -> new NotFoundException("RequestStatus", statusId));
+                .orElseThrow(() -> new NotFoundException("RequestStatus with id=" + statusId + "not found"));
     }
 
     private AppUser fetchActiveUserOrThrow(Long borrowerId) {
         return userRepo.findByIdAndIsDeletedFalse(borrowerId)
-                .orElseThrow(() -> new NotFoundException("User", borrowerId));
+                .orElseThrow(() -> new NotFoundException("User with id=" + borrowerId + "not found"));
     }
 
     private Listing fetchActiveListingOrThrow(Long listingId) {
         return listingRepo.findByIdAndIsDeletedFalse(listingId)
-                .orElseThrow(() -> new NotFoundException("Listing", listingId));
+                .orElseThrow(() -> new NotFoundException("Listing with id=" + listingId + "not found"));
     }
 
     private void checkUnauthorizedToChangeRequestStatus(
@@ -172,7 +173,7 @@ public class BorrowRequestServiceImpl implements BorrowRequestService {
         boolean isAdmin = fetchActiveUserOrThrow(currentUserId).getRole().getCode().equals("ADMIN");
 
         if (!isOwner && !isAdmin) {
-            throw new UnauthorizedStatusChangeException(
+            throw new AccessDeniedException(
                     "You don't have authority to change the status of this request");
         }
     }

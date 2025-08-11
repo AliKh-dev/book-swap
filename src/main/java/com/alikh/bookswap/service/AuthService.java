@@ -9,7 +9,6 @@ import com.alikh.bookswap.dto.auth.response.RegisterResponse;
 import com.alikh.bookswap.dto.user.request.UserChangePasswordRequest;
 import com.alikh.bookswap.exception.InvalidTokenException;
 import com.alikh.bookswap.exception.TokenExpiredException;
-import com.alikh.bookswap.exception.UnauthorizedException;
 import com.alikh.bookswap.service.contract.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,15 +43,9 @@ public class AuthService {
     }
 
     public RefreshResponse refreshAccessToken(String token) {
-        Jwt jwt;
-        try {
-            jwt = jwtService.parse(token);
-            if (jwt.isExpired()) {
-                throw new TokenExpiredException();
-            }
-        } catch (InvalidTokenException | TokenExpiredException ex) {
-            throw new UnauthorizedException("Refresh token is invalid or expired");
-        }
+        Jwt jwt = jwtService.parse(token);
+        if (jwt.isExpired())
+            throw new TokenExpiredException();
 
         var user = userService.fetch(jwt.getUserId());
 

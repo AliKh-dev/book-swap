@@ -3,8 +3,8 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.listingtype.request.*;
 import com.alikh.bookswap.dto.listingtype.response.*;
 import com.alikh.bookswap.entity.ListingType;
-import com.alikh.bookswap.exception.CodeAlreadyExistsException;
-import com.alikh.bookswap.exception.NotFoundException;
+import com.alikh.bookswap.exception.DuplicateCodeException;
+import com.alikh.bookswap.exception.parents.NotFoundException;
 import com.alikh.bookswap.mapper.ListingTypeMapper;
 import com.alikh.bookswap.repository.ListingTypeRepository;
 import com.alikh.bookswap.service.contract.ListingTypeService;
@@ -73,11 +73,11 @@ public class ListingTypeServiceImpl implements ListingTypeService {
 
     private ListingType fetchListingTypeOrThrow(Integer id) {
         return repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("ListingType", id));
+                .orElseThrow(() -> new NotFoundException("ListingType with id=" + id + "not found"));
     }
 
     private void checkCodeUniquenessOrThrow(String code) {
         if (repo.existsByCode(code))
-            throw new CodeAlreadyExistsException("ListingType", code);
+            throw new DuplicateCodeException("ListingType", code);
     }
 }
