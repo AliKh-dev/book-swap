@@ -7,7 +7,6 @@ import com.alikh.bookswap.dto.auth.response.LoginResponse;
 import com.alikh.bookswap.dto.auth.response.RefreshResponse;
 import com.alikh.bookswap.dto.auth.response.RegisterResponse;
 import com.alikh.bookswap.dto.user.request.UserChangePasswordRequest;
-import com.alikh.bookswap.exception.InvalidTokenException;
 import com.alikh.bookswap.exception.TokenExpiredException;
 import com.alikh.bookswap.service.contract.UserService;
 import lombok.RequiredArgsConstructor;

@@ -9,7 +9,6 @@ import com.alikh.bookswap.mapper.BookMapper;
 import com.alikh.bookswap.repository.*;
 
 import com.alikh.bookswap.service.contract.BookService;
-import jakarta.persistence.Id;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
