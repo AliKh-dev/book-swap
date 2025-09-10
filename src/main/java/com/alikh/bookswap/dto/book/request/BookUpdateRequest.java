@@ -11,12 +11,15 @@ public record BookUpdateRequest(
         @Size(max = 255)
         String author,
 
+        @NotBlank
         @Size(max = 100)
         String genre,
 
+        @NotBlank
         @Size(max = 20)
         String isbn,
 
+        @NotBlank
         @Size(max = 1000)
         String description,
 

@@ -3,6 +3,7 @@ package com.alikh.bookswap.service.implementation;
 import com.alikh.bookswap.dto.listing.request.*;
 import com.alikh.bookswap.dto.listing.response.*;
 import com.alikh.bookswap.entity.*;
+import com.alikh.bookswap.entity.Book;
 import com.alikh.bookswap.exception.AccessDeniedException;
 import com.alikh.bookswap.exception.DuplicateActiveListingException;
 import com.alikh.bookswap.exception.InvalidListingException;

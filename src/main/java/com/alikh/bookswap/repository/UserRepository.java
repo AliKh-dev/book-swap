@@ -1,7 +1,6 @@
 package com.alikh.bookswap.repository;
 
 import com.alikh.bookswap.entity.AppUser;
-import com.alikh.bookswap.entity.Book;
 import com.alikh.bookswap.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

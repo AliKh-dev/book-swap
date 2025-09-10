@@ -6,10 +6,10 @@ import com.alikh.bookswap.dto.book.request.BookUpdateRequest;
 import com.alikh.bookswap.dto.book.response.BookDetailResponse;
 import com.alikh.bookswap.dto.book.response.BookSummaryResponse;
 import com.alikh.bookswap.service.Jwt;
-import com.alikh.bookswap.service.contract.BookService;
+import com.alikh.bookswap.service.implementation.command.BookCommandService;
+import com.alikh.bookswap.service.implementation.query.BookQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +22,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookController {
 
-    private final BookService service;
+    private final BookQueryService queryService;
+    private final BookCommandService commandService;
 
     @PostMapping("/books")
     public ResponseEntity<BookSummaryResponse> create(
@@ -30,7 +31,7 @@ public class BookController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid BookCreateRequest dto
     ) {
-        var response = service.create(dto, jwt.getUserId());
+        var response = commandService.create(dto, jwt.getUserId());
         var uri = uriBuilder.path("/api/books/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
     }
@@ -39,17 +40,17 @@ public class BookController {
     public ResponseEntity<List<BookSummaryResponse>> listMine(
             @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(service.listMine(jwt.getUserId()));
+        return ResponseEntity.ok(queryService.listMine(jwt.getUserId()));
     }
 
     @GetMapping("/books")
     public ResponseEntity<List<BookSummaryResponse>> list() {
-        return ResponseEntity.ok(service.list());
+        return ResponseEntity.ok(queryService.list());
     }
 
     @GetMapping("/books/{id}")
     public ResponseEntity<BookDetailResponse> get(@PathVariable Long id) {
-        return ResponseEntity.ok(service.get(id));
+        return ResponseEntity.ok(queryService.get(id));
     }
 
     @PutMapping("/books/{id}")
@@ -58,7 +59,7 @@ public class BookController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid BookUpdateRequest dto
     ) {
-        return ResponseEntity.ok(service.update(id, dto, jwt.getUserId()));
+        return ResponseEntity.ok(commandService.update(id, dto, jwt.getUserId()));
     }
 
     @PatchMapping("/books/{id}")
@@ -67,7 +68,7 @@ public class BookController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody @Valid BookPatchRequest dto
     ) {
-        return ResponseEntity.ok(service.patch(id, dto, jwt.getUserId()));
+        return ResponseEntity.ok(commandService.patch(id, dto, jwt.getUserId()));
     }
 
     @DeleteMapping("/books/{id}")
@@ -77,9 +78,9 @@ public class BookController {
             @AuthenticationPrincipal Jwt jwt
     ) {
         if (hard)
-            service.hardDelete(id, jwt.getUserId());
+            commandService.hardDelete(id, jwt.getUserId());
         else
-            service.softDelete(id, jwt.getUserId());
+            commandService.softDelete(id, jwt.getUserId());
         return ResponseEntity.noContent().build();
     }
 }
